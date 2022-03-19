@@ -39,6 +39,10 @@ lookup_data = lookup_data.dropna(how='all')
 lookup_data.shape
 
 # %%
+
+# %%
+
+# %%
 lookup_data['Exit Survey'] = lookup_data['Exit Survey'].str.lower()
 lookup_data['Airings'] = lookup_data['Airings'].str.upper()
 
