@@ -30,27 +30,23 @@ lookup_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Lookup', skipr
 # # Preprocessing
 
 # %%
-lookup_data.shape
-
-# %%
+# Lookup data is meant to facilitate a join between the purchases data and the spend/lift data, but lookup data has a row will all null values, which doesn't help the join in any way.  I'll drop it.
 lookup_data = lookup_data.dropna(how='all')
 
 # %%
-lookup_data.shape
+# In order to make sure the joins happen correctly, we need to ensure that the strings we're joining on actually match.  
 
-# %%
+# The purchase data table is pretty messy, but if we assume the second column always contains the names of the networks, we can use .iloc to grab them and ensure they're lowercase 
 
-# %%
-
-# %%
 lookup_data['Exit Survey'] = lookup_data['Exit Survey'].str.lower()
 lookup_data['Airings'] = lookup_data['Airings'].str.upper()
-
-# %%
 airings_data['Network'] = airings_data['Network'].str.upper()
+purchase_data.iloc[:, 1] = purchase_data.iloc[:, 1].str.lower()
 
 # %% [markdown]
 # # Transposing Purchase Exit Survey Data - Converting dates from columns to rows in Purchase Exit Survey Data
+#
+# The purchases table is extremely messy and would be easier to work with if the rows were dates and the columns were the networks.  If we assume that the first row will always have the year, the third row will always have month names, and the fourth row will always have the day numbers, I can programmatically concatenate all the necessary date information in the form "Year-Month-Day", then use them for the rows.
 
 # %%
 current_year = purchase_data.iloc[0,:].dropna()
@@ -64,25 +60,14 @@ for month in purchase_data.iloc[2,2:].dropna():
 months
 
 # %%
-# current_month = months[0]
-# i = 0
-# for count, day in enumerate(day_nums, start=1):
-#     if str(day) > str(purchase_data.iloc[3, 2+count]):
-#         i += 1
-#         current_month = month[i]
-#         current_date = str(current_year) + '-' + current_month + '-' + str(day)
-#         print(current_date)
-#         #print(count)
-#     else:
-#         current_date = str(current_year) + '-' + current_month + '-' + str(day)
-#         print(current_date)
-#         #print(count)
-
+# Grab the row of day numbers and cast as integers
 day_nums = np.array(purchase_data.iloc[3,2:], dtype=int)
 
 parsed_dates = []
 current_month = months[0]
 i = 0
+
+# Walk through the list of day_nums and compare 
 for count, today in enumerate(day_nums, start=1):
     try:
         tomorrow = day_nums[count]
