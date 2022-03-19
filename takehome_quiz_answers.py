@@ -250,14 +250,14 @@ lookup_data.shape
 # purchase_grouped
 
 # %%
-test = lookup_data.merge(right=purchase_data_by_month, left_on='Exit Survey', right_on='Source', how='left').set_index(['Exit Survey', 'date'])
-test
+by_month_tbl = lookup_data.merge(right=purchase_data_by_month, left_on='Exit Survey', right_on='Source', how='left').set_index(['Exit Survey', 'date'])
+by_month_tbl
 
 # %%
-print(test.to_string())
+print(by_month_tbl.to_string())
 
 # %%
-test.shape
+by_month_tbl.shape
 
 # %% [markdown]
 # ## Spend and Lift by Network and Month
@@ -271,29 +271,54 @@ airings_spend_lift_grouped
 # airings_spend_lift_grouped.reset_index()
 
 # %%
+by_month_tbl.reset_index().head()
+
+# %%
 # purchase_grouped.reset_index()
+
+# %%
+airings_spend_lift_grouped.reset_index().head()
 
 # %% [markdown]
 # ## Joining Purchases/Lookup to Spend and Lift by Network and Month
 
 # %%
-month_and_network_grouped = purchase_grouped.reset_index().merge(right=airings_spend_lift_grouped.reset_index(), left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
-month_and_network_grouped
+# month_and_network_grouped = purchase_grouped.reset_index().merge(right=airings_spend_lift_grouped.reset_index(), left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
+# month_and_network_grouped
+
+new_tbl = by_month_tbl.reset_index().merge(right=airings_spend_lift_grouped.reset_index(), left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
+new_tbl.head()
 
 # %%
-month_and_network_grouped= month_and_network_grouped.set_index(['Source', 'date']).drop(labels=['Airings', 'Network', 'Date/Time ET'], axis=1)
-month_and_network_grouped
+new_tbl.shape
 
 # %%
-month_and_network_grouped.shape
+# month_and_network_grouped= month_and_network_grouped.set_index(['Source', 'date']).drop(labels=['Airings', 'Network', 'Date/Time ET'], axis=1)
+# month_and_network_grouped
+
+new_tbl = new_tbl.set_index(['Exit Survey', 'date']).drop(labels=['Airings', 'Network', 'Date/Time ET', 'Source'], axis=1)
+new_tbl
 
 # %%
+new_tbl.shape
 
 # %%
+print(new_tbl.to_string())
 
 # %%
+new_tbl['Conversion Rate'] = new_tbl['Purchases'] / new_tbl['Lift'] * 100
+new_tbl['Cost Per Acquisition'] = new_tbl['Spend'] / new_tbl['Purchases']
+new_tbl['Cost Per Visitor'] = new_tbl['Spend'] / new_tbl['Lift']
+new_tbl['Percent of Purchases'] = new_tbl['Purchases'] / sum(new_tbl['Purchases'].fillna(0)) * 100
+new_tbl['Percent of Spend'] = new_tbl['Spend'] / sum(new_tbl['Spend'].fillna(0)) * 100
+new_tbl['Percent Pur > Percent Spend'] = new_tbl['Percent of Purchases'] > new_tbl['Percent of Spend']
+new_tbl
 
 # %%
+print(new_tbl.to_string())
+
+# %% [markdown]
+# ## Done
 
 # %%
 airings_data.query('Network == "FOOD"')
