@@ -13,28 +13,40 @@
 #     name: python3
 # ---
 
+# %% [markdown]
+# # Start
+
 # %%
 import pandas as pd
 import numpy as np
 from datetime import datetime
-#import itertools
 
 # %%
 purchase_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Purchase Exit Survey Data')
 airings_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Airings')
 lookup_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Lookup', skiprows=1)
 
-# %%
-purchase_data.head()
+# %% [markdown]
+# # Preprocessing
 
 # %%
-airings_data.head()
+lookup_data.shape
 
 # %%
-lookup_data.head()
+lookup_data = lookup_data.dropna(how='all')
+
+# %%
+lookup_data.shape
+
+# %%
+lookup_data['Exit Survey'] = lookup_data['Exit Survey'].str.lower()
+lookup_data['Airings'] = lookup_data['Airings'].str.upper()
+
+# %%
+airings_data['Network'] = airings_data['Network'].str.upper()
 
 # %% [markdown]
-# # Converting dates from columns to rows in Purchase Exit Survey Data
+# # Transposing Purchase Exit Survey Data - Converting dates from columns to rows in Purchase Exit Survey Data
 
 # %%
 current_year = purchase_data.iloc[0,:].dropna()
@@ -120,27 +132,53 @@ purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 purchase_data_transpose.rename_axis('date', inplace=True)
 #purchase_data_transpose
 
+# %%
+purchase_data_transpose.shape
+
 # %% [markdown]
 # # Overall metrics by Network
 
-# %%
-sum_of_purchases = purchase_data_transpose.sum(axis=0)
-sum_of_purchases
+# %% [markdown]
+# ## Sum of Purchases by Network
 
 # %%
-overall_tbl = lookup_data.merge(right=sum_of_purchases.to_frame(), left_on='Exit Survey', right_on='Source', how='left')
+sum_of_purchases = purchase_data_transpose.sum(axis=0)
+sum_of_purchases = sum_of_purchases.to_frame()
+sum_of_purchases = sum_of_purchases.rename(columns={0:'Purchases'})
+sum_of_purchases.index = sum_of_purchases.index.str.lower()
+
+# %%
+sum_of_purchases.shape
+
+# %% [markdown]
+# ## Joining Purchases to Lookup Data
+
+# %%
+lookup_data.info()
+
+# %%
+overall_tbl = lookup_data.merge(right=sum_of_purchases, left_on='Exit Survey', right_on='Source', how='left')
 overall_tbl.drop(labels='Exit Survey.1', axis=1, inplace=True)
-overall_tbl.rename(columns={0:'Purchases'}, inplace=True)
+#overall_tbl.rename(columns={0:'Purchases'}, inplace=True)
 overall_tbl.set_index('Exit Survey', inplace=True)
-#overall_tbl
+overall_tbl.shape
+
+# %% [markdown]
+# ## Spend and Lift by Network
 
 # %%
 airings_spend_and_lift = airings_data.groupby('Network')[['Spend', 'Lift']].agg('sum')
-#airings_spend_and_lift
+airings_spend_and_lift.shape
+
+# %% [markdown]
+# ## Joining Purchases/Lookup to Spend and Lift
 
 # %%
 overall_tbl = overall_tbl.merge(right=airings_spend_and_lift,left_on='Airings', right_index=True, how='left')
-#overall_tbl
+overall_tbl.shape
+
+# %% [markdown]
+# ## Computing Metrics by Network
 
 # %%
 overall_tbl['Conversion Rate'] = overall_tbl['Purchases'] / overall_tbl['Lift'] * 100
@@ -152,26 +190,34 @@ overall_tbl['Percent Pur > Percent Spend'] = overall_tbl['Percent of Purchases']
 overall_tbl
 
 # %%
+overall_tbl.shape
 
-# %%
-
-# %%
+# %% [markdown]
+# ## Done
 
 # %% [markdown]
 # # Grouped Metrics by Network and Month
 
-# %%
-purchase_data_by_date = purchase_data_transpose.groupby(pd.Grouper(freq='M')).agg('sum')
-purchase_data_by_date
+# %% [markdown]
+# ## Purchase Data by Network and Month
 
 # %%
-purchase_data_by_date = purchase_data_by_date.transpose()
-purchase_data_by_date = purchase_data_by_date.stack().to_frame()
-purchase_data_by_date.rename(columns={0:'Purchases'}, inplace=True)
-purchase_data_by_date
+purchase_data_by_month = purchase_data_transpose.groupby(pd.Grouper(freq='M')).agg('sum')
+purchase_data_by_month
+
+# %%
+purchase_data_by_month = purchase_data_by_month.transpose()
+purchase_data_by_month = purchase_data_by_month.stack().to_frame()
+purchase_data_by_month.rename(columns={0:'Purchases'}, inplace=True)
+purchase_data_by_month = purchase_data_by_month.reset_index()
+purchase_data_by_month['Source'] = purchase_data_by_month['Source'].str.lower()
+purchase_data_by_month
+
+# %%
+purchase_data_by_month.shape
 
 # %% [markdown]
-# # Airings Sheet
+# ## Airings Sheet
 
 # %%
 airings_data.info()
@@ -179,14 +225,20 @@ airings_data.info()
 # %%
 # airings_data.groupby([pd.Grouper(key='Date/Time ET', freq='M'), 'Network'])[['Spend', 'Lift']].agg('sum')
 
+# %% [markdown]
+# ## Preparing Lookup Data for Join
+
 # %%
 lookup_data = lookup_data.drop('Exit Survey.1', axis=1)
-lookup_data = lookup_data.set_index('Exit Survey')
-lookup_data = lookup_data.rename_axis('Source')
+# lookup_data = lookup_data.set_index('Exit Survey')
+# lookup_data = lookup_data.rename_axis('Source')
 lookup_data
 
+# %%
+lookup_data.shape
+
 # %% [markdown]
-# # Joining Purchases Exit Survey Data and Airings
+# ## Joining Purchases by network and month to Lookup Data
 
 # %%
 # joined_tbl = lookup_data[['Exit Survey', 'Airings']].merge(right=purchase_data_by_date, left_on='Exit Survey', right_on='Source', how='left')
@@ -194,8 +246,21 @@ lookup_data
 # joined_tbl
 
 # %%
-purchase_grouped = purchase_data_by_date.join(lookup_data, how='left')
-purchase_grouped
+# purchase_grouped = purchase_data_by_month.join(lookup_data, how='right')
+# purchase_grouped
+
+# %%
+test = lookup_data.merge(right=purchase_data_by_month, left_on='Exit Survey', right_on='Source', how='left').set_index(['Exit Survey', 'date'])
+test
+
+# %%
+print(test.to_string())
+
+# %%
+test.shape
+
+# %% [markdown]
+# ## Spend and Lift by Network and Month
 
 # %%
 # NEED TO drop Network as an index and make a column, join with purchase_grouped and keep the 
@@ -203,10 +268,13 @@ airings_spend_lift_grouped = airings_data.groupby(['Network', pd.Grouper(key='Da
 airings_spend_lift_grouped
 
 # %%
-airings_spend_lift_grouped.reset_index()
+# airings_spend_lift_grouped.reset_index()
 
 # %%
-purchase_grouped.reset_index()
+# purchase_grouped.reset_index()
+
+# %% [markdown]
+# ## Joining Purchases/Lookup to Spend and Lift by Network and Month
 
 # %%
 month_and_network_grouped = purchase_grouped.reset_index().merge(right=airings_spend_lift_grouped.reset_index(), left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
@@ -217,6 +285,7 @@ month_and_network_grouped= month_and_network_grouped.set_index(['Source', 'date'
 month_and_network_grouped
 
 # %%
+month_and_network_grouped.shape
 
 # %%
 
