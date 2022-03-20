@@ -90,12 +90,9 @@ for count, current_day_num in enumerate(day_nums, start=1):
         current_date = datetime.strptime(current_date, '%Y-%B-%d').date()
         parsed_dates.append(current_date)
 
-# Now that all the dates have been parsed, we replace the un
+# Now that all the dates have been parsed, we replace the unparsed dates with the parsed ones, then transpose the table.  We now have rows that correspond to dates and columns that correspond to networks
 purchase_data.iloc[3,2:] = parsed_dates
-
-# %%
 purchase_data_transpose = purchase_data.iloc[3:,:].transpose()
-#purchase_data_transpose.head()
 
 # %% [markdown]
 # ## Some Cleanup
@@ -129,19 +126,21 @@ purchase_data_transpose.head()
 # ## Done
 
 # %% [markdown]
-# # Overall metrics by Network
+# # Metrics by Network
 
 # %% [markdown]
 # ## Sum of Purchases by Network
 
 # %%
-sum_of_purchases = purchase_data_transpose.sum(axis=0)
-sum_of_purchases = sum_of_purchases.to_frame()
-sum_of_purchases = sum_of_purchases.rename(columns={0:'Purchases'})
-sum_of_purchases.index = sum_of_purchases.index.str.lower()
+purchases_by_network = purchase_data_transpose.sum(axis=0)
+purchases_by_network = purchases_by_network.to_frame()
+purchases_by_network = purchases_by_network.rename(columns={0:'Purchases'})
 
 # %%
-sum_of_purchases.shape
+purchases_by_network.shape
+
+# %%
+purchases_by_network.head()
 
 # %% [markdown]
 # ## Joining Purchases to Lookup Data
@@ -150,40 +149,55 @@ sum_of_purchases.shape
 lookup_data.info()
 
 # %%
-overall_tbl = lookup_data.merge(right=sum_of_purchases, left_on='Exit Survey', right_on='Source', how='left')
-overall_tbl.drop(labels='Exit Survey.1', axis=1, inplace=True)
-#overall_tbl.rename(columns={0:'Purchases'}, inplace=True)
-overall_tbl.set_index('Exit Survey', inplace=True)
-overall_tbl.shape
+purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Exit Survey', right_on='Source', how='left')
+purchases_by_network_w_lookup.drop(labels='Exit Survey.1', axis=1, inplace=True)
+#purchases_by_network_w_lookup.rename(columns={0:'Purchases'}, inplace=True)
+purchases_by_network_w_lookup.set_index('Exit Survey', inplace=True)
+purchases_by_network_w_lookup.shape
+
+# %%
+purchases_by_network_w_lookup.head()
 
 # %% [markdown]
 # ## Spend and Lift by Network
 
 # %%
-airings_spend_and_lift = airings_data.groupby('Network')[['Spend', 'Lift']].agg('sum')
-airings_spend_and_lift.shape
+spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].agg('sum')
+spend_and_lift_by_network.shape
+
+# %%
+spend_and_lift_by_network.head()
 
 # %% [markdown]
 # ## Joining Purchases/Lookup to Spend and Lift
 
 # %%
-overall_tbl = overall_tbl.merge(right=airings_spend_and_lift,left_on='Airings', right_index=True, how='left')
-overall_tbl.shape
+purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spend_and_lift_by_network, left_on='Airings', right_index=True, how='left')
+purchases_spend_lift_by_network.shape
+
+# %%
+purchases_spend_lift_by_network.head()
 
 # %% [markdown]
 # ## Computing Metrics by Network
 
 # %%
-overall_tbl['Conversion Rate'] = overall_tbl['Purchases'] / overall_tbl['Lift'] * 100
-overall_tbl['Cost Per Acquisition'] = overall_tbl['Spend'] / overall_tbl['Purchases']
-overall_tbl['Cost Per Visitor'] = overall_tbl['Spend'] / overall_tbl['Lift']
-overall_tbl['Percent of Purchases'] = overall_tbl['Purchases'] / sum(overall_tbl['Purchases'].fillna(0)) * 100
-overall_tbl['Percent of Spend'] = overall_tbl['Spend'] / sum(overall_tbl['Spend'].fillna(0)) * 100
-overall_tbl['Percent Pur > Percent Spend'] = overall_tbl['Percent of Purchases'] > overall_tbl['Percent of Spend']
-overall_tbl
+purchases_spend_lift_by_network['Conversion Rate'] = purchases_spend_lift_by_network['Purchases'] / purchases_spend_lift_by_network['Lift'] * 100
+
+purchases_spend_lift_by_network['Cost Per Acquisition'] = purchases_spend_lift_by_network['Spend'] / purchases_spend_lift_by_network['Purchases']
+
+purchases_spend_lift_by_network['Cost Per Visitor'] = purchases_spend_lift_by_network['Spend'] / purchases_spend_lift_by_network['Lift']
+
+purchases_spend_lift_by_network['Percent of Purchases'] = purchases_spend_lift_by_network['Purchases'] / sum(purchases_spend_lift_by_network['Purchases'].fillna(0)) * 100
+
+purchases_spend_lift_by_network['Percent of Spend'] = purchases_spend_lift_by_network['Spend'] / sum(purchases_spend_lift_by_network['Spend'].fillna(0)) * 100
+
+purchases_spend_lift_by_network['Percent Pur > Percent Spend'] = purchases_spend_lift_by_network['Percent of Purchases'] > purchases_spend_lift_by_network['Percent of Spend']
+git 
+purchases_spend_lift_by_network
 
 # %%
-overall_tbl.shape
+purchases_spend_lift_by_network.shape
 
 # %% [markdown]
 # ## Done
