@@ -109,36 +109,15 @@ purchase_data_transpose.rename_axis('date', inplace=True)
 # Drop first row, which doesn't contain anything useful
 purchase_data_transpose = purchase_data_transpose.iloc[1:]
 
-# Drop the column of dates.  This row is no
-#purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
-
 # Replace column names with the row of network names and then drop that row
 purchase_data_transpose.columns = purchase_data_transpose.iloc[0]
 purchase_data_transpose = purchase_data_transpose.drop(labels='source')
 
-purchase_data_transpose.rename_axis('Source', axis='columns')
+# Rename column axis as upper-case "Source" to match original table
+purchase_data_transpose.rename_axis('Source', axis='columns', inplace=True)
 
 # Convert index of dates to datetime objects
 purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
-
-# %%
-purchase_data_transpose
-
-# %%
-# purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
-
-# %%
-# purchase_data_transpose.columns = purchase_data_transpose.iloc[0]
-
-# %%
-# purchase_data_transpose = purchase_data_transpose.drop(labels='source')
-
-# %%
-# purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
-
-# %%
-# purchase_data_transpose.rename_axis('date', inplace=True)
-# #purchase_data_transpose
 
 # %%
 purchase_data_transpose.shape
