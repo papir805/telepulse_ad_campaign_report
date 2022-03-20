@@ -134,7 +134,7 @@ purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 # # Metrics by Network
 
 # %% [markdown]
-# ## Sum of Purchases by Network
+# ## Purchases by Network
 
 # %%
 purchases_by_network = purchase_data_transpose.sum(axis=0)
@@ -146,19 +146,6 @@ purchases_by_network = purchases_by_network.rename(columns={0:'Purchases'})
 
 # %%
 # purchases_by_network.head()
-
-# %% [markdown]
-# ## Joining Purchases to Lookup Data
-
-# %%
-purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Exit Survey', right_on='Source', how='left')
-purchases_by_network_w_lookup.set_index('Exit Survey', inplace=True)
-
-# %%
-# purchases_by_network_w_lookup.shape
-
-# %%
-# purchases_by_network_w_lookup.head()
 
 # %% [markdown]
 # ## Spend and Lift by Network
@@ -173,7 +160,23 @@ spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].a
 # spend_and_lift_by_network.head()
 
 # %% [markdown]
-# ## Joining Purchases/Lookup to Spend and Lift
+# ## Joins
+
+# %% [markdown]
+# ### Joining Purchases by Network to Lookup Data
+
+# %%
+purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Exit Survey', right_on='Source', how='left')
+purchases_by_network_w_lookup.set_index('Exit Survey', inplace=True)
+
+# %%
+# purchases_by_network_w_lookup.shape
+
+# %%
+# purchases_by_network_w_lookup.head()
+
+# %% [markdown] tags=[]
+# ### Joining Purchases/Lookup by Network to Spend and Lift
 
 # %%
 purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spend_and_lift_by_network, left_on='Airings', right_index=True, how='left')
@@ -188,7 +191,7 @@ purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spen
 # ## Computing Metrics by Network
 
 # %%
-purchases_spend_lift_by_network['Conversion Rate'] = purchases_spend_lift_by_network['Purchases'] / purchases_spend_lift_by_network['Lift'] * 100
+purchases_spend_lift_by_network['Conversion Rate (%)'] = purchases_spend_lift_by_network['Purchases'] / purchases_spend_lift_by_network['Lift'] * 100
 
 purchases_spend_lift_by_network['Cost Per Acquisition'] = purchases_spend_lift_by_network['Spend'] / purchases_spend_lift_by_network['Purchases']
 
@@ -218,10 +221,10 @@ purchases_spend_lift_by_network.to_csv(F"./cleaned_output/purchases_spend_lift_b
 # ## Done
 
 # %% [markdown]
-# # Grouped Metrics by Network and Month
+# # Metrics by Network and Month
 
 # %% [markdown]
-# ## Purchase Data by Network and Month
+# ## Purchases by Network and Month
 
 # %%
 # GroupBy month to find purchases per month for each network
@@ -250,7 +253,19 @@ purchase_data_by_month = purchase_data_by_month.reset_index()
 # purchase_data_by_month.shape
 
 # %% [markdown]
-# ## Joining Purchases by network and month to Lookup Data
+# ## Spend and Lift by Network and Month
+
+# %%
+spend_lift_by_network_month = airings_data.groupby(['Network', pd.Grouper(key='Date/Time ET', freq='M')])[['Spend', 'Lift']].agg('sum')
+
+# %%
+# spend_lift_by_network_month.head()
+
+# %% [markdown]
+# ## Joins
+
+# %% [markdown]
+# ### Joining Purchases by Network and Month to Lookup Data
 
 # %%
 purchases_by_month_with_lookup = lookup_data.merge(right=purchase_data_by_month, left_on='Exit Survey', right_on='Source', how='left').set_index(['Exit Survey', 'date'])
@@ -265,16 +280,7 @@ purchases_by_month_with_lookup = lookup_data.merge(right=purchase_data_by_month,
 # purchases_by_month_with_lookup.shape
 
 # %% [markdown]
-# ## Spend and Lift by Network and Month
-
-# %%
-spend_lift_by_network_month = airings_data.groupby(['Network', pd.Grouper(key='Date/Time ET', freq='M')])[['Spend', 'Lift']].agg('sum')
-
-# %%
-# spend_lift_by_network_month.head()
-
-# %% [markdown]
-# ## Joining Purchases/Lookup to Spend and Lift by Network and Month
+# ### Joining Purchases/Lookup by Network and Month to Spend and Lift
 
 # %%
 purchases_spend_lift_by_network_and_month = purchases_by_month_with_lookup.reset_index().merge(right=spend_lift_by_network_month.reset_index(), left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
@@ -297,8 +303,11 @@ purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_
 # %%
 # print(purchases_spend_lift_by_network_and_month.head().to_string())
 
+# %% [markdown]
+# ## Computing Metrics by Network and Month
+
 # %%
-purchases_spend_lift_by_network_and_month['Conversion Rate'] = purchases_spend_lift_by_network_and_month['Purchases'] / purchases_spend_lift_by_network_and_month['Lift'] * 100
+purchases_spend_lift_by_network_and_month['Conversion Rate (%)'] = purchases_spend_lift_by_network_and_month['Purchases'] / purchases_spend_lift_by_network_and_month['Lift'] * 100
 
 purchases_spend_lift_by_network_and_month['Cost Per Acquisition'] = purchases_spend_lift_by_network_and_month['Spend'] / purchases_spend_lift_by_network_and_month['Purchases']
 
@@ -324,3 +333,181 @@ purchases_spend_lift_by_network_and_month.to_csv(F"./cleaned_output/purchases_sp
 
 # %% [markdown]
 # ## Done
+
+# %% [markdown]
+# # Report
+
+# %% [markdown]
+# ## Overall Metrics - Establishing a baseline
+
+# %%
+total_purchases = sum(purchases_spend_lift_by_network['Purchases'].fillna(0))
+total_spend = sum(purchases_spend_lift_by_network['Spend'].fillna(0))
+total_lift = sum(purchases_spend_lift_by_network['Lift'].fillna(0))
+
+total_lift
+
+# %% [markdown]
+# ### Cost Per Visitor = $ \frac{\text{total spend}}{\text{total lift}}$
+
+# %%
+cost_per_visitor = total_spend / total_lift
+cost_per_visitor = round(cost_per_visitor, 2)
+print(F"The overall cost per visitor for the TV campaign is ${cost_per_visitor}")
+
+# %% [markdown]
+# ### Conversion Rate = $ \frac{\text{total # of purchases}}{\text{total lift}} $
+
+# %%
+conversion_rate =  total_purchases / total_lift
+conversion_rate = round(conversion_rate * 100, 2)
+print(F"The overall conversion rate for the TV campaign is {conversion_rate}%")
+
+# %% [markdown]
+# ### Cost Per Acquisition = $ \frac{\text{total spend}}{\text{total # of purchases}} $
+
+# %%
+cost_per_acquisition = total_spend / total_purchases
+cost_per_acquisition = round(cost_per_acquisition, 2)
+print(F"The overall cost per acquisition for the TV campaign is ${cost_per_acquisition}")
+
+# %%
+
+# %%
+
+# %%
+
+# %%
+purchases_spend_lift_by_network.head()
+
+# %% tags=[]
+report_for_client = purchases_spend_lift_by_network.drop(['Airings', 'Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1).dropna(how='all').fillna(0)
+
+report_for_client.head()
+
+# %%
+report_for_client = report_for_client.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate":0, "Cost Per Acquisition":2, "Cost Per Visitor":2})
+
+report_for_client[['Purchases', 'Lift']] = report_for_client[['Purchases', 'Lift']].astype(int)
+
+report_for_client.rename_axis('Exit Survey Source', axis =0, inplace=True)
+
+report_for_client = report_for_client.sort_values('Exit Survey Source')
+
+# %%
+report_for_client.index = report_for_client.index.str.replace('_', ' ').str.title()
+
+# %%
+# import matplotlib.pyplot as plt
+# from matplotlib.backends.backend_pdf import PdfPages
+
+# #df = pd.DataFrame(np.random.random((10,3)), columns = ("col 1", "col 2", "col 3"))
+
+# #https://stackoverflow.com/questions/32137396/how-do-i-plot-only-a-table-in-matplotlib
+# fig, ax = plt.subplots(figsize=(12,4))
+# #plt.title('Purchases, Spend, and Lift by Network')
+# ax.axis('tight')
+# ax.axis('off')
+# the_table = ax.table(cellText=report_for_client.values,colLabels=report_for_client.columns,loc='center')
+
+# #https://stackoverflow.com/questions/4042192/reduce-left-and-right-margins-in-matplotlib-plot
+# pp = PdfPages("foo.pdf")
+# pp.savefig(fig, bbox_inches='tight')
+# pp.close()
+
+# %%
+import pdfkit
+
+f = open('./reports_output/html/report_for_client.html','w')
+a = report_for_client.to_html(col_space='100px')
+f.write(a)
+f.close()
+
+pdfkit.from_file('./reports_output/html/report_for_client.html', './reports_output/pdfs/report_for_client.pdf')
+
+# %%
+
+# %% [markdown]
+# ## Report sorted by Purchases
+
+# %%
+report_purchases_sorted = report_for_client.sort_values('Purchases', ascending=False)
+
+# %%
+f = open('./reports_output/html/report_purchases_sorted.html','w')
+a = report_purchases_sorted.to_html(col_space='100px')
+f.write(a)
+f.close()
+
+pdfkit.from_file('./reports_output/html/report_purchases_sorted.html', './reports_output/pdfs/report_purchases_sorted.pdf')
+
+# %%
+import matplotlib.pyplot as plt
+
+# %%
+plt.bar(x=report_purchases_sorted.index, height='Purchases')
+
+# %%
+ax = report_purchases_sorted[0:10].plot(kind='barh', y='Purchases', title='Top 10 Networks by Purchase', legend=False)
+ax.invert_yaxis()
+ax.set_xlabel('Number of Purchases');
+
+# %%
+ax = report_purchases_sorted[-10:].plot(kind='barh', y='Purchases', title='Bottom 10 Networks by Purchase', legend=False)
+ax.invert_yaxis()
+ax.set_xlabel('Number of Purchases')
+ax.set_xticks(np.arange(0,3,1));
+
+# %%
+ax = report_purchases_sorted[0:10].plot(kind='barh', y='Purchases', title='Top 10 Networks by Purchase', legend=False, color='blue')
+ax.invert_yaxis()
+ax.set_xlabel('Number of Purchases')
+ax1 = ax.twiny()
+report_purchases_sorted[0:10].plot(kind='barh', y='Spend', title='Top 10 Networks by Purchase', legend=False, ax=ax, color='r');
+
+# %%
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.set_xlabel('Number of Purchases')
+
+
+ax2 = ax.twiny()
+ax2.set_xlabel('Amount Spent ($)')
+
+
+report_purchases_sorted['Purchases'][0:10].plot(kind='barh', color='blue', position=1, width=0.4, ax=ax)
+report_purchases_sorted['Spend'][0:10].plot(kind='barh', color='red', position=0, width=0.4, ax=ax2)
+
+#ax2.invert_yaxis()
+plt.ylim((-0.5, len(report_purchases_sorted[0:10])-0.5))
+ax.invert_yaxis()
+;
+
+# %%
+fig = plt.figure(figsize=(7,7))
+ax = fig.add_subplot(111)
+ax.set_xlabel('Number of Purchases')
+
+
+ax2 = ax.twiny()
+ax2.set_xlabel('Amount Spent ($)')
+
+
+report_purchases_sorted['Purchases'][-10:].plot(kind='barh', color='blue', position=1, width=0.4, ax=ax)
+report_purchases_sorted['Spend'][-10:].plot(kind='barh', color='red', position=0, width=0.4, ax=ax2)
+ax.invert_yaxis()
+#ax2.invert_yaxis()
+plt.ylim((-0.5, len(report_purchases_sorted[0:10])-0.5));
+
+# %%
+fig = plt.figure(figsize=(7,7))
+ax = fig.add_subplot(111)
+ax.set_xlabel('Number of Purchases')
+
+
+ax2 = ax.twiny()
+ax2.set_xlabel('Amount Spent ($)')
+
+report_purchases_sorted[['Purchases', 'Spend']][0:10].plot(kind='barh')
+
+# %%

@@ -1,4 +1,4 @@
-Exit Survey,date,Purchases,Spend,Lift,Conversion Rate,Cost Per Acquisition,Cost Per Visitor,Percent of Purchases,Percent of Spend,Percent Pur > Percent Spend
+Exit Survey,date,Purchases,Spend,Lift,Conversion Rate (%),Cost Per Acquisition,Cost Per Visitor,Percent of Purchases,Percent of Spend,Percent Pur > Percent Spend
 (blank),2017-09-30,0.0,,,,,,0.0,,False
 (blank),2017-10-31,3.0,,,,,,1.2711864406779663,,False
 aapka_colors,2017-09-30,1.0,,,,,,0.423728813559322,,False
