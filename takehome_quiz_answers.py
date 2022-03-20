@@ -67,59 +67,78 @@ parsed_dates = []
 current_month = months[0]
 i = 0
 
-# Walk through the list of day_nums and compare 
-for count, today in enumerate(day_nums, start=1):
+# Walk through the list of day_nums.  
+
+# If current_day_num > next_day_num, that indicates a change in month (ex: If current_day = Sept-30 and next_day = Oct-1, b/c 30 > 1).  When this happens, we concatenate the current_day, then increase i by 1 to set the current_month to the next month for furture concatenation.  
+
+# If current_day_num < next_day_num, that indicates both days are in the same month (ex: If current_day = Sept-5 and next_day = Sept-6, b/c 5 < 6), so we concatenate like normal.
+
+# The try block handles the exception when you get to the last day in day_nums.  Since there are no more days in the list, we get an error when we try to index into the list one day into the future.
+for count, current_day_num in enumerate(day_nums, start=1):
     try:
-        tomorrow = day_nums[count]
+        next_day_num = day_nums[count]
     except:
         pass
-        # current_date = str(current_year) + '-' + current_month + '-' + str(today)
-        # current_date = datetime.strptime(current_date, '%Y-%B-%d').date()
-        # parsed_dates.append(current_date)
-        #print(type(current_date))
-    if today > tomorrow:
-        current_date = str(current_year) + '-' + current_month + '-' + str(today)
+    if current_day_num > next_day_num:
+        current_date = str(current_year) + '-' + current_month + '-' + str(current_day_num)
         current_date = datetime.strptime(current_date, '%Y-%B-%d').date()
         i += 1
         current_month = months[i]
         parsed_dates.append(current_date)
-        #print(current_date)
-        #print(count)
     else:
-        current_date = str(current_year) + '-' + current_month + '-' + str(today)
+        current_date = str(current_year) + '-' + current_month + '-' + str(current_day_num)
         current_date = datetime.strptime(current_date, '%Y-%B-%d').date()
-        #print(current_date)
         parsed_dates.append(current_date)
-        #print(count)
 
-# %%
+# Now that all the dates have been parsed, we replace the un
 purchase_data.iloc[3,2:] = parsed_dates
 
 # %%
 purchase_data_transpose = purchase_data.iloc[3:,:].transpose()
-#new_df.head()
+#purchase_data_transpose.head()
 
 # %%
-purchase_data_transpose.index = purchase_data_transpose.iloc[:, 0]
+purchase_data_transpose.head()
+
+# %% [markdown]
+# ## Some Cleanup
 
 # %%
+# Set the column of dates as the index and rename the axis appropriately
+#purchase_data_transpose.index = purchase_data_transpose.iloc[:, 0]
+purchase_data_transpose.set_index(3, inplace=True)
+purchase_data_transpose.rename_axis('date', inplace=True)
+
+# Drop first row, which doesn't contain anything useful
 purchase_data_transpose = purchase_data_transpose.iloc[1:]
 
-# %%
-purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
+# Drop the column of dates.  This row is no
+#purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
 
-# %%
+# Replace column names with the row of network names and then drop that row
 purchase_data_transpose.columns = purchase_data_transpose.iloc[0]
+purchase_data_transpose = purchase_data_transpose.drop(labels='source')
 
-# %%
-purchase_data_transpose = purchase_data_transpose.drop(labels='Source')
-
-# %%
+# Convert index of dates to datetime objects
 purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 
 # %%
-purchase_data_transpose.rename_axis('date', inplace=True)
-#purchase_data_transpose
+
+# %%
+# purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
+
+# %%
+# purchase_data_transpose.columns = purchase_data_transpose.iloc[0]
+
+# %%
+# purchase_data_transpose = purchase_data_transpose.drop(labels='source')
+
+# %%
+# purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
+
+# %%
+# purchase_data_transpose.rename_axis('date', inplace=True)
+# #purchase_data_transpose
 
 # %%
 purchase_data_transpose.shape
