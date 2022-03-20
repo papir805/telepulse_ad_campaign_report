@@ -97,9 +97,6 @@ purchase_data.iloc[3,2:] = parsed_dates
 purchase_data_transpose = purchase_data.iloc[3:,:].transpose()
 #purchase_data_transpose.head()
 
-# %%
-purchase_data_transpose.head()
-
 # %% [markdown]
 # ## Some Cleanup
 
@@ -119,10 +116,13 @@ purchase_data_transpose = purchase_data_transpose.iloc[1:]
 purchase_data_transpose.columns = purchase_data_transpose.iloc[0]
 purchase_data_transpose = purchase_data_transpose.drop(labels='source')
 
+purchase_data_transpose.rename_axis('Source', axis='columns')
+
 # Convert index of dates to datetime objects
 purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 
 # %%
+purchase_data_transpose
 
 # %%
 # purchase_data_transpose = purchase_data_transpose.drop(labels=3, axis=1)
@@ -142,6 +142,12 @@ purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 
 # %%
 purchase_data_transpose.shape
+
+# %%
+purchase_data_transpose.head()
+
+# %% [markdown]
+# ## Done
 
 # %% [markdown]
 # # Overall metrics by Network
