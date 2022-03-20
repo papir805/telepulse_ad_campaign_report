@@ -193,11 +193,20 @@ purchases_spend_lift_by_network['Percent of Purchases'] = purchases_spend_lift_b
 purchases_spend_lift_by_network['Percent of Spend'] = purchases_spend_lift_by_network['Spend'] / sum(purchases_spend_lift_by_network['Spend'].fillna(0)) * 100
 
 purchases_spend_lift_by_network['Percent Pur > Percent Spend'] = purchases_spend_lift_by_network['Percent of Purchases'] > purchases_spend_lift_by_network['Percent of Spend']
-git 
+
 purchases_spend_lift_by_network
 
 # %%
 purchases_spend_lift_by_network.shape
+
+# %% [markdown]
+# ## Output results to CSV file
+
+# %%
+purchases_spend_lift_by_network_filename = str(current_year) + '_' + '_'.join(str(month) for month in months)
+purchases_spend_lift_by_network_filename
+
+purchases_spend_lift_by_network.to_csv(F"./cleaned_output/purchases_spend_lift_by_network_{purchases_spend_lift_by_network_filename}.csv")
 
 # %% [markdown]
 # ## Done
