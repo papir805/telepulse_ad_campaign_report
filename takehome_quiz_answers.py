@@ -245,7 +245,116 @@ purchases_spend_lift_by_network.to_csv(F"./cleaned_output/purchases_spend_lift_b
 # # Metrics by Network and Month
 
 # %% [markdown]
-# ## Purchases by Network and Month
+# ### BEGIN MONTHLY REPORT FIX
+
+# %%
+
+# %%
+purchase_data_sept = purchase_data_transpose[purchase_data_transpose.index.month==9]
+tot_purchase_data_sept = purchase_data_sept.sum().to_frame()
+
+purchase_data_oct = purchase_data_transpose[purchase_data_transpose.index.month==10]
+tot_purchase_data_oct = purchase_data_oct.sum().to_frame()
+
+# %%
+airings_data_sept = airings_data[airings_data['Date/Time ET'].dt.month==9]
+airings_spend_and_lift_sept = airings_data_sept.groupby('Network').sum().reset_index()
+
+airings_data_oct = airings_data[airings_data['Date/Time ET'].dt.month==10]
+airings_spend_and_lift_oct = airings_data_oct.groupby('Network').sum().reset_index()
+
+# %%
+lookup_data_and_purchases_sept = lookup_data.merge(right=tot_purchase_data_sept, left_on='Exit Survey', right_on='Source', how='left')
+
+lookup_data_and_purchases_oct = lookup_data.merge(right=tot_purchase_data_oct, left_on='Exit Survey', right_on='Source', how='left')
+
+# %%
+purchases_spend_lift_sept = lookup_data_and_purchases_sept.merge(right=airings_spend_and_lift_sept, left_on='Airings', right_on='Network', how='left').rename(columns={0:'Purchases'})
+
+purchases_spend_lift_oct = lookup_data_and_purchases_oct.merge(right=airings_spend_and_lift_oct, left_on='Airings', right_on='Network', how='left').rename(columns={0:'Purchases'})
+
+# %%
+purchases_spend_lift_sept[purchases_spend_lift_sept['Exit Survey']=='bloomberg'][['Purchases', 'Spend', 'Lift']].fillna(0)
+
+# %%
+purchases_spend_lift_oct[purchases_spend_lift_sept['Exit Survey']=='bloomberg'][['Purchases', 'Spend', 'Lift']].fillna(0)
+
+# %%
+x='fyi'
+purchases_spend_lift_sept[purchases_spend_lift_sept['Exit Survey']==x][['Purchases', 'Spend', 'Lift']].fillna(0) + purchases_spend_lift_oct[purchases_spend_lift_sept['Exit Survey']==x][['Purchases', 'Spend', 'Lift']].fillna(0)
+
+# %%
+purchases_spend_lift_sept['Month'] = 'September'
+
+# %%
+purchases_spend_lift_oct['Month'] = 'October'
+
+# %%
+# pd.concat([purchases_spend_lift_sept, purchases_spend_lift_oct]).set_index(['Exit Survey', 'Month'])
+
+# %%
+purchases_spend_lift_sept['Exit Survey'] = purchases_spend_lift_sept['Exit Survey'].str.replace('_', ' ').str.title()
+
+# %%
+purchases_spend_lift_oct['Exit Survey'] = purchases_spend_lift_oct['Exit Survey'].str.replace('_', ' ').str.title()
+
+# %%
+purchases_spend_lift_sept.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
+
+# %%
+purchases_spend_lift_oct.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
+
+# %%
+purchases_spend_lift_sept = purchases_spend_lift_sept.set_index(['Exit Survey Source', 'Month']).drop(labels=['Airings', 'Network'], axis=1)
+
+# %%
+purchases_spend_lift_oct = purchases_spend_lift_oct.set_index(['Exit Survey Source', 'Month']).drop(labels=['Airings', 'Network'], axis=1)
+
+# %%
+purchases_spend_lift_sept.fillna(0, inplace=True)
+
+# %%
+purchases_spend_lift_oct.fillna(0, inplace=True)
+
+# %%
+purchases_spend_lift_sept['Conversion Rate (Purchases/Lift)%'] = purchases_spend_lift_sept['Purchases'] / purchases_spend_lift_sept['Lift'] * 100
+
+purchases_spend_lift_sept['Cost Per Acquisition (Spend/Purchases)'] = purchases_spend_lift_sept['Spend'] / purchases_spend_lift_sept['Purchases']
+
+purchases_spend_lift_sept['Cost Per Visitor (Spend/Lift)'] = purchases_spend_lift_sept['Spend'] / purchases_spend_lift_sept['Lift']
+
+purchases_spend_lift_sept['Percent of Purchases'] = purchases_spend_lift_sept['Purchases'] / sum(purchases_spend_lift_sept['Purchases'].fillna(0)) * 100
+
+purchases_spend_lift_sept['Percent of Spend'] = purchases_spend_lift_sept['Spend'] / sum(purchases_spend_lift_sept['Spend'].fillna(0)) * 100
+
+purchases_spend_lift_sept['Percent Pur > Percent Spend'] = purchases_spend_lift_sept['Percent of Purchases'] > purchases_spend_lift_sept['Percent of Spend']
+
+# %%
+purchases_spend_lift_oct['Conversion Rate (Purchases/Lift)%'] = purchases_spend_lift_oct['Purchases'] / purchases_spend_lift_oct['Lift'] * 100
+
+purchases_spend_lift_oct['Cost Per Acquisition (Spend/Purchases)'] = purchases_spend_lift_oct['Spend'] / purchases_spend_lift_oct['Purchases']
+
+purchases_spend_lift_oct['Cost Per Visitor (Spend/Lift)'] = purchases_spend_lift_oct['Spend'] / purchases_spend_lift_oct['Lift']
+
+purchases_spend_lift_oct['Percent of Purchases'] = purchases_spend_lift_oct['Purchases'] / sum(purchases_spend_lift_oct['Purchases'].fillna(0)) * 100
+
+purchases_spend_lift_oct['Percent of Spend'] = purchases_spend_lift_oct['Spend'] / sum(purchases_spend_lift_oct['Spend'].fillna(0)) * 100
+
+purchases_spend_lift_oct['Percent Pur > Percent Spend'] = purchases_spend_lift_oct['Percent of Purchases'] > purchases_spend_lift_oct['Percent of Spend']
+
+# %%
+purchases_spend_lift_sept.head()
+
+# %%
+purchases_spend_lift_oct.head()
+
+# %% [markdown]
+# ### END MONTHLY REPORT FIX
+
+# %% [markdown]
+# ## BEGIN OLD MONTHLY REPORTS - Purchases by Network and Month
+
+# %%
 
 # %%
 # GroupBy month to find purchases per month for each network
@@ -366,20 +475,18 @@ purchases_spend_lift_by_network_and_month.to_csv(F"./cleaned_output/purchases_sp
 # airings_data[airings_data['Network']=='COM'].groupby(pd.Grouper(freq='M')).sum()
 
 # %% [markdown]
+# ## END OLD MONTHLY REPORTS 
+
+# %% [markdown]
 # # Generating Reports
+
+# %% [markdown]
+# ## Overall report by network
 
 # %% tags=[]
 report_for_client = purchases_spend_lift_by_network.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
 
 report_for_client.query('Spend != 0', inplace=True)
-
-# %%
-report_for_client
-
-# %%
-report_for_client_by_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
-
-#report_for_client_by_month.query('Spend != 0', inplace=True)
 
 # %%
 report_for_client[['Purchases', 'Lift']] = report_for_client[['Purchases', 'Lift']].astype(int)
@@ -392,12 +499,59 @@ report_for_client.rename_axis('Exit Survey Source', axis=0, inplace=True)
 report_for_client = report_for_client.sort_values('Exit Survey Source')
 
 # %%
+# report_for_client
+
+# %% [markdown]
+# ## Monthly report by network
+
+# %% [markdown]
+# ### BEGIN NEW WORK
+
+# %%
+report_for_client_sept = purchases_spend_lift_sept.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
+
+report_for_client_sept.query('Spend != 0', inplace=True)
+
+# %%
+report_for_client_oct = purchases_spend_lift_oct.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
+
+report_for_client_oct.query('Spend != 0', inplace=True)
+
+# %%
+report_for_client_sept = report_for_client_sept.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
+
+report_for_client_sept[['Purchases', 'Lift']] = report_for_client_sept[['Purchases', 'Lift']].astype(int)
+
+report_for_client_sept = report_for_client_sept.sort_values('Exit Survey Source')
+
+# %%
+report_for_client_oct = report_for_client_oct.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
+
+report_for_client_oct[['Purchases', 'Lift']] = report_for_client_oct[['Purchases', 'Lift']].astype(int)
+
+report_for_client_oct = report_for_client_oct.sort_values('Exit Survey Source')
+
+# %% [markdown]
+# ### END NEW WORK
+
+# %% [markdown]
+# ### BEGIN OLD WORK
+
+# %%
+report_for_client_by_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
+
+#report_for_client_by_month.query('Spend != 0', inplace=True)
+
+# %%
 report_for_client_by_month = report_for_client_by_month.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
 
 report_for_client_by_month[['Purchases', 'Lift']] = report_for_client_by_month[['Purchases', 'Lift']].astype(int)
 
 # %%
 report_for_client_by_month = report_for_client_by_month.loc[report_for_client.index]
+
+# %% [markdown]
+# ### END OLD WORK
 
 # %% [markdown]
 # ## Exporting Results to PDF Files
@@ -412,6 +566,31 @@ f.close()
 
 pdfkit.from_file('./reports_output/html/report_for_client.html', './reports_output/pdfs/report_for_client.pdf')
 
+# %% [markdown]
+# ### BEGIN NEW WORK
+
+# %%
+f = open('./reports_output/html/report_for_client_sept.html','w')
+a = report_for_client_sept.to_html(col_space='100px')
+f.write(a)
+f.close()
+
+pdfkit.from_file('./reports_output/html/report_for_client_sept.html', './reports_output/pdfs/report_for_client_sept.pdf')
+
+# %%
+f = open('./reports_output/html/report_for_client_oct.html','w')
+a = report_for_client_oct.to_html(col_space='100px')
+f.write(a)
+f.close()
+
+pdfkit.from_file('./reports_output/html/report_for_client_oct.html', './reports_output/pdfs/report_for_client_oct.pdf')
+
+# %% [markdown]
+# ### END NEW WORK
+
+# %% [markdown]
+# ### BEGIN OLD WORK
+
 # %%
 f = open('./reports_output/html/report_for_client_by_month.html','w')
 a = report_for_client_by_month.to_html(col_space='100px')
@@ -421,51 +600,7 @@ f.close()
 pdfkit.from_file('./reports_output/html/report_for_client_by_month.html', './reports_output/pdfs/report_for_client_by_month.pdf')
 
 # %% [markdown]
-# ## Reports viewed in Jupyter Notebook
-
-# %% [markdown]
-# ### Report by Network
-
-# %%
-report_for_client
-
-# %% [markdown]
-# ### Report by Network and Month
-
-# %%
-report_for_client_by_month
-
-# %% [markdown]
-# ## Sorted Reports
-
-# %% [markdown]
-# ### Sorted by purchases
-
-# %%
-report_purchases_sorted = report_for_client.sort_values('Purchases', ascending=False)
-
-# %%
-f = open('./reports_output/html/report_purchases_sorted.html','w')
-a = report_purchases_sorted.to_html(col_space='100px')
-f.write(a)
-f.close()
-
-pdfkit.from_file('./reports_output/html/report_purchases_sorted.html', './reports_output/pdfs/report_purchases_sorted.pdf')
-
-# %%
-report_top_5_purchases = report_purchases_sorted[0:5]
-
-# %% [markdown]
-# ## Investigating reports
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-report_for_client_by_month.index
+# ### END OLD WORK
 
 # %% [markdown]
 # # Presentation 
@@ -666,9 +801,6 @@ plt.ylim((-0.5, len(report_purchases_sorted[0:10])-0.5));
 # %%
 import seaborn as sns
 
-# %% [markdown]
-# ## Purchases
-
 # %%
 fig, ax = plt.subplots(1,1,figsize=(2,10))
 sns.heatmap(report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False), annot=True, cmap='Greens', vmin=0, fmt='g')
@@ -687,11 +819,11 @@ sns.heatmap(report_for_client[['Conversion Rate (Purchases/Lift)%']].sort_values
 
 # %%
 fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Cost Per Acquisition (Spend/Purchases)']].sort_values(by='Cost Per Acquisition (Spend/Purchases)', ascending=False), annot=True, cmap='Reds', vmin=0, fmt='g')
+sns.heatmap(report_for_client[['Cost Per Acquisition (Spend/Purchases)']].sort_values(by='Cost Per Acquisition (Spend/Purchases)', ascending=True)[:], annot=True, cmap='Reds', vmin=0, fmt='g')
 
 # %%
 fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Cost Per Visitor (Spend/Lift)']].sort_values(by='Cost Per Visitor (Spend/Lift)', ascending=False), annot=True, cmap='Reds', vmin=0, fmt='g')
+sns.heatmap(report_for_client[['Cost Per Visitor (Spend/Lift)']].sort_values(by='Cost Per Visitor (Spend/Lift)', ascending=True), annot=True, cmap='Reds', vmin=0, fmt='g')
 
 # %%
 
