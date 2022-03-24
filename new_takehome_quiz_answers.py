@@ -360,9 +360,6 @@ purchases_spend_lift_by_network_and_month[['Purchases', 'Lift']] = purchases_spe
 purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.sort_values('Exit Survey Source')
 
 # %% [markdown]
-# ## Computing Metrics by Network and Month
-
-# %% [markdown]
 # ## Output results to CSV file
 
 # %%
@@ -482,6 +479,12 @@ print(F"The overall conversion rate was: {conversion_rate_any_spend:.1f}%")
 # ### Heatmaps
 
 # %%
+num_purchases_sorted = report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False)
+
+# top_5_purchases = num_purchases_sorted[0:5]
+# bottom_5_purchases = num_purchases_sorted[-5:0]
+
+# %%
 mask1 = num_purchases_sorted>=num_purchases_sorted['Purchases'][4]
 mask2 = num_purchases_sorted<=num_purchases_sorted['Purchases'][-5]
 
@@ -493,12 +496,6 @@ mask3
 
 # %%
 ~mask3
-
-# %%
-num_purchases_sorted = report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False)
-
-# top_5_purchases = num_purchases_sorted[0:5]
-# bottom_5_purchases = num_purchases_sorted[-5:0]
 
 # %%
 num_purchases_sorted = report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False)
@@ -768,6 +765,158 @@ def make_scatter(df, x_field, y_field, x_units='', y_units='', color_1='green', 
 
     plt.show();
 
+
+# %%
+def make_scatter2(df,
+                  x_field,
+                  y_field,
+                  size_scale,
+                  x_units='',
+                  y_units='',
+                  color_1='green',
+                  color_2='red',
+                  expand_text=(1.5, 1.5),
+                  expand_points=(3,3),
+                  expand_objects=(3,3),
+                  force_text=(1,1),
+                  force_points=(1,1),
+                  force_objects=(1,1)):
+    
+    from adjustText import adjust_text
+    
+    fig, ax = plt.subplots(1,1,figsize=(10,5))
+    
+    # ax.tick_params(top=False,
+    #                bottom=True,
+    #                left=True,
+    #                right=False,
+    #                labelleft=False,
+    #                labelbottom=False)
+    
+    df[x_field] = df[x_field].replace(np.inf, 0)
+    df[y_field] = df[y_field].replace(np.inf, 0)
+    
+    df.plot(kind='scatter', x=x_field, y=y_field, ax=ax)
+    
+    x_field_mean = df[x_field].mean()
+    y_field_mean = df[y_field].mean()
+    
+    if x_units == "$":
+        x_field_mean = round(x_field_mean, 2)
+    elif x_units == "%":
+        x_field_mean = round(x_field_mean, 1)
+    else:
+        x_field_mean = round(x_field_mean)
+        
+    if y_units == "$":
+        y_field_mean = round(y_field_mean, 2)
+    elif y_units == "%":
+        y_field_mean = round(y_field_mean, 1)
+    else:
+        y_field_mean = round(y_field_mean)
+
+    
+    low_x_high_y = df[(df[x_field] < x_field_mean) & (df[y_field] >= y_field_mean)]
+    high_x_low_y = df[(df[x_field] >= x_field_mean) & (df[y_field] < y_field_mean)]
+
+    together = []
+    
+    for i in range(len(low_x_high_y)):
+        txt1 = low_x_high_y.index[i]
+        x_coord1 = low_x_high_y[x_field][i]
+        y_coord1 = low_x_high_y[y_field][i]
+        size1 = low_x_high_y['Purchases'][i]
+        if size1 == 0:
+            size1 = size_scale * 1 / size_scale
+        color1 = color_1
+        together.append((txt1, x_coord1, y_coord1, color1))
+        ax.scatter(x_coord1, y_coord1, color=color1, s=size1*size_scale)
+
+    for i in range(len(high_x_low_y)):
+        txt2 = high_x_low_y.index[i]
+        x_coord2 = high_x_low_y[x_field][i]
+        y_coord2 = high_x_low_y[y_field][i]
+        size2 = high_x_low_y['Purchases'][i]
+        if size2 == 0:
+            size2 = size_scale * 1 / size_scale
+        color2 = color_2
+        together.append((txt2, x_coord2, y_coord2, color2))
+        ax.scatter(x_coord2, y_coord2, color=color2, s=size2*size_scale)
+    together.sort()
+
+
+    text = [x for (x,y,z,c) in together]
+    x_coords = [y for (x,y,z,c) in together]
+    y_coords = [z for (x,y,z,c) in together]
+    colors = [c for (x,y,z,c) in together]
+
+    texts = []
+    for x, y, s, c in zip(x_coords, y_coords, text, colors):
+        texts.append(plt.text(x, y, s, color=c))
+
+    
+    # I should lookup how to do this with regex to make things easier...
+    x_annot_text = x_field
+    y_annot_text = y_field
+    if x_field == "Conversion Rate (Purchases/Lift)%":
+        x_annot_text = "Conversion Rate"
+    elif x_field == "Cost Per Acquisition (Spend/Purchases)":
+        x_annot_text = "Cost Per Acquisition"
+    elif x_field == "Cost Per Visitor (Spend/Lift)":
+        x_annot_text = "Cost Per Visitor"
+        
+    if y_field == "Conversion Rate (Purchases/Lift)%":
+        y_annot_text = "Conversion Rate"
+    elif y_field == "Cost Per Acquisition (Spend/Purchases)":
+        y_annot_text = "Cost Per Acquisition"
+    elif y_field == "Cost Per Visitor (Spend/Lift)":
+        y_annot_text = "Cost Per Visitor"
+    
+    
+    
+    plt.axvline(x=x_field_mean, linestyle=(0, (2, 8)), color='k')
+    ax.annotate(F'Mean {x_annot_text}'#: {round(x_field_mean, 2)}{x_units}'
+                ,
+                xy=(x_field_mean, max(ax.get_ylim())), xycoords='data',
+                xytext=(0, 2), textcoords='offset pixels',
+                color='k', ha='center')
+    
+    plt.axhline(y=y_field_mean, linestyle=(0, (2, 8)), color='k')
+    ax.annotate(F'Mean\n{y_annot_text}' #:\n{round(y_field_mean, 2)}{y_units}'
+                ,
+                xy=(max(ax.get_xlim()), y_field_mean), xycoords='data',
+                xytext=(5, 0), textcoords='offset pixels',
+                color='k', ha='left')
+    
+    ax.axes.set_xticks([0, x_field_mean])
+    #ax.axes.xaxis.set_ticklabels([])
+    ax.axes.set_yticks([0, y_field_mean])
+    #ax.axes.yaxis.set_ticklabels([])
+    adjust_text(texts,
+            expand_text=expand_text,
+            expand_points=expand_points,
+            expand_objects=expand_objects,
+            force_text=force_text,
+            force_points=force_points,
+            force_objects=force_objects,
+            only_move={'points':'y', 'texts':'y'},
+            arrowprops=dict(arrowstyle="->", color='k', lw=0.5))
+
+    plt.show();
+
+# %%
+scale=10
+
+# %%
+make_scatter2(report_for_client,
+             x_field='Conversion Rate (Purchases/Lift)%',
+             y_field='Spend',
+             size_scale=scale,
+             x_units='%',
+             y_units='$',
+             color_1='red',
+             color_2='green')
+
 # %% [markdown]
 # #### Purchases vs. Spend
 
@@ -776,6 +925,16 @@ make_scatter(df=report_for_client,
              x_field='Purchases',
              y_field='Spend',
              #size=False,
+             x_units='',
+             y_units='$',
+             color_1='red',
+             color_2='green')
+
+# %%
+make_scatter2(df=report_for_client,
+             x_field='Purchases',
+             y_field='Spend',
+             size_scale=scale,
              x_units='',
              y_units='$',
              color_1='red',
@@ -794,6 +953,16 @@ make_scatter(report_for_client,
              color_1='red',
              color_2='green')
 
+# %%
+make_scatter2(report_for_client,
+             x_field='Lift',
+             y_field='Spend',
+             size_scale=scale,
+             x_units='',
+             y_units='$',
+             color_1='red',
+             color_2='green')
+
 # %% [markdown]
 # #### Lift vs. Purchases
 
@@ -801,6 +970,14 @@ make_scatter(report_for_client,
 make_scatter(report_for_client,
              x_field='Lift',
              y_field='Purchases',
+             x_units='',
+             y_units='')
+
+# %%
+make_scatter2(report_for_client,
+             x_field='Lift',
+             y_field='Purchases',
+             size_scale=scale,
              x_units='',
              y_units='')
 
@@ -816,6 +993,16 @@ make_scatter(report_for_client,
              color_1='red',
              color_2='green')
 
+# %%
+make_scatter2(report_for_client,
+             x_field='Conversion Rate (Purchases/Lift)%',
+             y_field='Spend',
+             size_scale=scale,
+             x_units='%',
+             y_units='$',
+             color_1='red',
+             color_2='green')
+
 # %% [markdown]
 # #### Conversion Rate vs. Cost Per Acquisition
 
@@ -823,6 +1010,16 @@ make_scatter(report_for_client,
 make_scatter(report_for_client,
              x_field='Conversion Rate (Purchases/Lift)%',
              y_field='Cost Per Acquisition (Spend/Purchases)',
+             x_units='%',
+             y_units='$',
+             color_1='red',
+             color_2='green')
+
+# %%
+make_scatter2(report_for_client,
+             x_field='Conversion Rate (Purchases/Lift)%',
+             y_field='Cost Per Acquisition (Spend/Purchases)',
+             size_scale=scale,
              x_units='%',
              y_units='$',
              color_1='red',
@@ -841,6 +1038,14 @@ make_scatter(df=report_for_client,
              color_2='green')
 
 # %%
+make_scatter2(df=report_for_client,
+             x_field="Conversion Rate (Purchases/Lift)%",
+             y_field="Cost Per Visitor (Spend/Lift)",
+             size_scale=scale,
+             x_units="%",
+             y_units="$",
+             color_1='red',
+             color_2='green')
 
 # %%
 
@@ -848,6 +1053,61 @@ make_scatter(df=report_for_client,
 
 # %% [markdown]
 # ## Which Networks have no spend but we see purchases?
+
+# %%
+no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Exit Survey` != 'Other' & `Exit Survey` != '(Blank)'")
+no_spend_but_purchases
+
+# %%
+no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Exit Survey` != 'Other' & `Exit Survey` != '(Blank)'")
+
+no_spend_but_purchases = no_spend_but_purchases.sort_values('Purchases', ascending=False)[['Purchases']]
+
+# %%
+no_spend_but_purchases
+
+# %%
+no_spend_but_purchases['percent_of_all_purchases'] = no_spend_but_purchases['Purchases'] / total_purchases_from_campaign * 100
+
+# %%
+no_spend_but_purchases
+
+# %%
+mean_num_purchases_with_spend = report_for_client['Purchases'].mean()
+mean_num_purchases_from_campaign = purchases_spend_lift_by_network['Purchases'].mean()
+
+# %%
+import matplotlib.patheffects as pe
+
+# %%
+fig, ax = plt.subplots(1,1,figsize=(8,6))
+no_spend_but_purchases['Purchases'].plot(kind='barh', ax=ax, edgecolor='black')
+ax.set_xlabel('Number of Purchases on Exit Survey')
+ax.set_title('Channels where spend = 0')
+
+
+ax.axvline(mean_num_purchases_with_spend, color='red', linestyle='--')
+text1 = ax.annotate(F'Mean number of\npurchases from channels\nthat had spending',
+                xy=(mean_num_purchases_with_spend, 0), xycoords='data',
+                xytext=(5, -175), textcoords='offset pixels',
+                color='red', ha='left')
+# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=0.5, foreground='black'), pe.Normal()])
+
+ax.axvline(mean_num_purchases_from_campaign, color='darkviolet', linestyle='--')
+text2 = ax.annotate(F'Mean number of\npurchases overall',
+                xy=(mean_num_purchases_from_campaign, 0), xycoords='data',
+                xytext=(5, -175), textcoords='offset pixels',
+                color='darkviolet', ha='left')
+# text2.set_path_effects(path_effects=[pe.withStroke(linewidth=0.5, foreground='black'), pe.Normal()])
+
+ax.invert_yaxis();
+
+# %%
+fig, ax = plt.subplots(1,1,figsize=(8,6))
+no_spend_but_purchases['percent_of_all_purchases'].plot(kind='barh', ax=ax)
+ax.set_xlabel('Percent of Purchases on Exit Survey')
+ax.set_title('Channels where spend = 0')
+ax.invert_yaxis();
 
 # %%
 num_purchases_no_spend = report_for_client[report_for_client['Spend']==0].groupby("Exit Survey Source")['Purchases'].agg('sum')
