@@ -123,12 +123,6 @@ purchase_data_transpose.rename_axis('Source', axis='columns', inplace=True)
 # Convert index of dates to datetime objects
 purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 
-# %%
-# purchase_data_transpose.shape
-
-# %%
-purchase_data_transpose.head()
-
 # %% [markdown]
 # ## Done
 
@@ -143,23 +137,11 @@ purchases_by_network = purchase_data_transpose.sum(axis=0)
 purchases_by_network = purchases_by_network.to_frame()
 purchases_by_network = purchases_by_network.rename(columns={0:'Purchases'})
 
-# %%
-# purchases_by_network.shape
-
-# %%
-# purchases_by_network.head()
-
 # %% [markdown]
 # ## Spend and Lift by Network
 
 # %%
 spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].agg('sum')
-
-# %%
-# spend_and_lift_by_network.shape
-
-# %%
-# spend_and_lift_by_network.head()
 
 # %% [markdown]
 # ## Joins
@@ -171,12 +153,6 @@ spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].a
 purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Exit Survey', right_on='Source', how='left')
 purchases_by_network_w_lookup.set_index('Exit Survey', inplace=True)
 
-# %%
-# purchases_by_network_w_lookup.shape
-
-# %%
-# purchases_by_network_w_lookup.head()
-
 # %% [markdown] tags=[]
 # ### Joining Purchases/Lookup by Network to Spend and Lift
 
@@ -187,25 +163,10 @@ purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spen
 purchases_spend_lift_by_network.drop('Airings', axis=1, inplace=True)
 
 # %%
-# purchases_spend_lift_by_network.shape
-
-# %%
-# purchases_spend_lift_by_network.head()
-
-# %%
 purchases_spend_lift_by_network.index = purchases_spend_lift_by_network.index.str.replace('_', ' ').str.title()
 
 # %%
-purchases_spend_lift_by_network
-
-# %%
 purchases_spend_lift_by_network.fillna(0, inplace=True)
-
-# %%
-cnbc_world = airings_data[airings_data['Network']=='CNBCWORLD']
-
-# %%
-cnbc_world[cnbc_world['Date/Time ET'].isnull()==True]
 
 # %% [markdown]
 # ## Computing Metrics by Network
@@ -222,15 +183,6 @@ purchases_spend_lift_by_network['Percent of Purchases'] = purchases_spend_lift_b
 purchases_spend_lift_by_network['Percent of Spend'] = purchases_spend_lift_by_network['Spend'] / sum(purchases_spend_lift_by_network['Spend'].fillna(0)) * 100
 
 purchases_spend_lift_by_network['Percent Pur > Percent Spend'] = purchases_spend_lift_by_network['Percent of Purchases'] > purchases_spend_lift_by_network['Percent of Spend']
-
-# %%
-purchases_spend_lift_by_network
-
-# %%
-# purchases_spend_lift_by_network
-
-# %%
-# purchases_spend_lift_by_network.shape
 
 # %% [markdown]
 # ## Output results to CSV file
@@ -268,16 +220,11 @@ lookup_data_with_months.drop(columns='key', inplace=True)
 
 # Now we have a lookup table that has the appropriate dates for each month in the campaign for each channel
 
-# %%
-lookup_data_with_months.head()
-
 # %% [markdown]
 # ## Aggregating Spend and Lift by Network and Month
 
 # %%
 spend_lift_by_network_and_month = airings_data.groupby(['Network', pd.Grouper(key='Date/Time ET', freq='M')]).sum().reset_index()
-
-spend_lift_by_network_and_month.head()
 
 # %% [markdown]
 # ## Aggregating Purchases by Network and Month
@@ -286,8 +233,6 @@ spend_lift_by_network_and_month.head()
 purchases_by_network_and_month = purchase_data_transpose.groupby(pd.Grouper(freq='M')).sum().transpose().stack().to_frame().reset_index()
 
 purchases_by_network_and_month.rename(columns={0:'Purchases'}, inplace=True)
-
-purchases_by_network_and_month.head()
 
 # %% [markdown]
 # ## Joins
@@ -299,8 +244,6 @@ purchases_by_network_and_month.head()
 lookup_spend_lift_by_network_and_month = lookup_data_with_months.merge(spend_lift_by_network_and_month, left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
 
 lookup_spend_lift_by_network_and_month.drop(columns=['Airings', 'Network', 'Date/Time ET'], inplace=True)
-
-lookup_spend_lift_by_network_and_month.head()
 
 # %% [markdown]
 # ### Joining Spend and Lift to Purchases
@@ -320,16 +263,13 @@ purchases_spend_lift_by_network_and_month['Exit Survey'] = purchases_spend_lift_
 purchases_spend_lift_by_network_and_month.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
 
 # %%
-purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.set_index(['Exit Survey Source', 'date'])#.drop(labels=['Airings', 'Network', 'Date/Time ET', 'Source'], axis=1)
+purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.set_index(['Exit Survey Source', 'date'])
 
 # %%
 purchases_spend_lift_by_network_and_month.fillna(0, inplace=True)
 
 # %%
 purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month[['Purchases', 'Spend', 'Lift']]
-
-# %%
-purchases_spend_lift_by_network_and_month
 
 # %% [markdown]
 # ## Computing Metrics by Network and Month
@@ -347,11 +287,6 @@ purchases_spend_lift_by_network_and_month['Percent of Spend'] = purchases_spend_
 
 purchases_spend_lift_by_network_and_month['Percent Pur > Percent Spend'] = purchases_spend_lift_by_network_and_month['Percent of Purchases'] > purchases_spend_lift_by_network_and_month['Percent of Spend']
 
-# %% tags=[]
-# purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
-
-# purchases_spend_lift_by_network_and_month.query('(Spend > 0) & (Purchases != 0)', inplace=True)
-
 # %%
 purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
 
@@ -367,11 +302,6 @@ purchases_spend_lift_by_network_and_month.to_csv(F"./cleaned_output/purchases_sp
 
 # %% [markdown]
 # ## Done
-
-# %%
-# airings_data.index = pd.to_datetime(airings_data['Date/Time ET'])
-
-# airings_data[airings_data['Network']=='COM'].groupby(pd.Grouper(freq='M')).sum()
 
 # %% [markdown]
 # # Generating Reports
@@ -394,16 +324,11 @@ report_for_client.rename_axis('Exit Survey Source', axis=0, inplace=True)
 
 report_for_client = report_for_client.sort_values('Exit Survey Source')
 
-# %%
-# report_for_client
-
 # %% [markdown]
 # ## Monthly report by network
 
 # %%
-report_for_client_by_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
-
-#report_for_client_by_month.query('Spend != 0', inplace=True)
+report_for_client_by_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)
 
 # %%
 report_for_client_by_month = report_for_client_by_month.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
@@ -907,16 +832,6 @@ def make_scatter2(df,
 # %%
 scale=10
 
-# %%
-make_scatter2(report_for_client,
-             x_field='Conversion Rate (Purchases/Lift)%',
-             y_field='Spend',
-             size_scale=scale,
-             x_units='%',
-             y_units='$',
-             color_1='red',
-             color_2='green')
-
 # %% [markdown]
 # #### Purchases vs. Spend
 
@@ -941,6 +856,24 @@ make_scatter2(df=report_for_client,
              color_2='green')
 
 # %% [markdown]
+# #### Lift vs. Purchases
+
+# %%
+make_scatter(report_for_client,
+             x_field='Lift',
+             y_field='Purchases',
+             x_units='',
+             y_units='')
+
+# %%
+make_scatter2(report_for_client,
+             x_field='Lift',
+             y_field='Purchases',
+             size_scale=scale,
+             x_units='',
+             y_units='')
+
+# %% [markdown]
 # #### Lift vs. Spend
 
 # %%
@@ -962,24 +895,6 @@ make_scatter2(report_for_client,
              y_units='$',
              color_1='red',
              color_2='green')
-
-# %% [markdown]
-# #### Lift vs. Purchases
-
-# %%
-make_scatter(report_for_client,
-             x_field='Lift',
-             y_field='Purchases',
-             x_units='',
-             y_units='')
-
-# %%
-make_scatter2(report_for_client,
-             x_field='Lift',
-             y_field='Purchases',
-             size_scale=scale,
-             x_units='',
-             y_units='')
 
 # %% [markdown]
 # #### Conversion Rate vs. Spend
@@ -1048,6 +963,7 @@ make_scatter2(df=report_for_client,
              color_2='green')
 
 # %%
+purchases_spend_lift_by_network.query('Spend == 0')
 
 # %%
 
