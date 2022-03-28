@@ -199,7 +199,7 @@ purchases_spend_lift_by_network.to_csv(F"./cleaned_output/purchases_spend_lift_b
 # # Metrics by Network and Month
 
 # %% [markdown]
-# ## Creating a lookup table that has monthly data information through a Cross Join
+# ## Creating a lookup table that has monthly date information through a Cross Join
 
 # %% tags=[]
 # First we generate a series that has the monthly date information as the index, which we can grab
@@ -310,7 +310,7 @@ purchases_spend_lift_by_network_and_month.to_csv(F"./cleaned_output/purchases_sp
 # ## Overall report by network
 
 # %% tags=[]
-report_for_client = purchases_spend_lift_by_network.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
+report_for_client = purchases_spend_lift_by_network.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)
 
 report_for_client.query('Spend > 0', inplace=True)
 
@@ -338,6 +338,21 @@ report_for_client_by_month[['Purchases', 'Lift']] = report_for_client_by_month[[
 # %%
 # This will ensure that both reports have the same channels.  Since we already filtered report_for_client to show only channels where there was spend, report_for_client_by_month will also also have those same channels.  
 report_for_client_by_month = report_for_client_by_month.loc[report_for_client.index]
+
+# %%
+report_for_client_by_month.fillna(0, inplace=True)
+
+# %% [markdown]
+# # Viewing Report by Network
+
+# %%
+report_for_client
+
+# %% [markdown]
+# # Viewing Report by Network and Month
+
+# %%
+report_for_client_by_month
 
 # %% [markdown]
 # ## Exporting Results to PDF Files
@@ -397,175 +412,415 @@ print('-'*60)
 print(F"The overall cost per acquisition was: ${cost_per_acquisition_any_spend:.2f}")
 print(F"The overall conversion rate was: {conversion_rate_any_spend:.1f}%")
 
+
 # %% [markdown]
 # ## Cost Efficiency Metrics
 
 # %% [markdown]
 # ### Heatmaps
 
-# %%
-num_purchases_sorted = report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False)
-
-# top_5_purchases = num_purchases_sorted[0:5]
-# bottom_5_purchases = num_purchases_sorted[-5:0]
+# %% [markdown]
+# #### Plotting Function - make_heatmap()
 
 # %%
-mask1 = num_purchases_sorted>=num_purchases_sorted['Purchases'][4]
-mask2 = num_purchases_sorted<=num_purchases_sorted['Purchases'][-5]
+def make_heatmap(df, field, color_map, top_labels, bottom_labels, rounding=".0f", cutoff_value=False, asc=False, annotate_horizontal=True, hide_y_label=False):
 
-# %%
-mask3 = mask1 | mask2
-
-# %%
-mask3
-
-# %%
-~mask3
-
-# %%
-num_purchases_sorted = report_for_client[['Purchases']].sort_values(by='Purchases', ascending=False)
-
-purchases_labels = []
-for count, label in enumerate(num_purchases_sorted.index):
-    print(count, label)
-    if count<5 or count>len(num_purchases_sorted.index)-6:
-        purchases_labels.append(label)
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # # Get cutoff_value isn't supplied, we use the mean as the cutoff_value
+    if cutoff_value==False:
+        cutoff_value = df[field].mean()
+    
+    
+    # Sort purchases High to Low
+    sorted_values = df[[field]].sort_values(by=field, ascending=asc)
+    
+    # Find index of channel that has a field value >= field_mean.  This is used to draw horizontal line in heatmap later.
+    if asc == False:
+        horizontal_y_val = sorted_values[sorted_values[field] > cutoff_value].shape[0]
     else:
-        purchases_labels.append('')
+        horizontal_y_val = sorted_values[sorted_values[field] < cutoff_value].shape[0]
 
-# %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-# sns.heatmap(num_purchases_sorted,annot=True, cmap='Greens', vmin=0, fmt='g')
+    # Create labels for y_ticks.  Keep top and bottom 5 labels, replace middle labels
+    # with empty string.
+    labels_list = []
+    for count, label in enumerate(sorted_values.index):
+        #print(count, label)
+        if count<5 or count>len(sorted_values.index)-6:
+            labels_list.append(label)
+        else:
+            labels_list.append('')
+    
+    # # This part is needed if you want to get the values of Purchases to change the annotations (Annot) in the heatmap.  This keeps the top and bottom 5 values, but replaces the middle values with np.nan.  You can pass top_and_bottom_values to the sns.heatmap Annot arg to only annotate the top and bottom 5 values.
 
-sns.heatmap(num_purchases_sorted,
-            #mask=mask3,
-            annot=True, 
-            cmap='Greens', 
-            fmt='g',
-            cbar=True,
-            yticklabels=purchases_labels);
+    # top_and_bottom_values = []
+    # for i, boolean in enumerate(top_and_bottom_mask[field]):
+    #     if boolean == True:
+    #         purchases = sorted_values.iloc[i, 0]
+    #         top_and_bottom_values.append(purchases)
+    #         top_and_bottom_labels.append(top_and_bottom_mask.index.values[i])
+    #     else:
+    #         top_and_bottom_values.append(np.nan)
+
+    
+    # Unfortunately we need to hard code the names of the channels that are among the top and bottom 5 of Purchases, Spend, and Lift, b/c grabbing them programmatically is a little hard
+    top_5_channels = top_labels
+    bottom_5_channels = bottom_labels
 
 
-# sns.heatmap(num_purchases_sorted,
-#             mask=~mask3,
-#             annot=True, 
-#             cmap='Greens', 
-#             fmt='g',
-#             annot_kws={"weight": "bold"},
-#            cbar = False)
-# sns.heatmap(num_purchases_sorted,
-#             mask=mask3,
-#             annot=True, 
-#             cmap='Greens', 
-#             fmt='g',
-#             cbar=True,
-#            yticklabels=purchases_labels);
+    fig, ax = plt.subplots(1,1,figsize=(2,10))
 
-# for label in ax.get_yticklabels()#.set_color('blue')
-# ax.yaxis.set_tick_params(labelcolor='blue')
-# sns.heatmap(num_purchases_sorted,
-#             mask=(num_purchases_sorted<=num_purchases_sorted['Purchases'][4]) | (num_purchases_sorted>=num_purchases_sorted['Purchases'][-5]),
-#             annot=True, 
-#             cmap='Greens', 
-#             fmt='g',
-#             cbar=False)
 
-# %%
-spend_sorted = report_for_client[['Spend']].sort_values(by='Spend', ascending=False)
-
-spend_labels = []
-for count, label in enumerate(spend_sorted.index):
-    #print(count, label)
-    if count<5 or count>len(spend_sorted.index)-6:
-        spend_labels.append(label)
+    ## the last two entries for Cost Per Acquisition are np.inf and can't be plotted, so we remove them
+    if field == 'Cost Per Acquisition (Spend/Purchases)':
+        sorted_values = df[[field]].sort_values(by=field, ascending=True)[:-2]
+    
+    # Create masks
+    if asc==False:
+        
+        mask1 = sorted_values>=sorted_values[field][4]
+        ## Bottom 5 mask
+        mask2 = sorted_values<=sorted_values[field][-5]
     else:
-        spend_labels.append('')
+        ## Top 5 mask
+        mask1 = sorted_values>=sorted_values[field][-5]
+        ## Bottom 5 mask
+        mask2 = sorted_values<=sorted_values[field][4]
+
+    top_and_bottom_mask = mask1 | mask2
+    middle_mask = ~top_and_bottom_mask
+    
+    #print(middle_mask)
+    
+    sns.heatmap(data=sorted_values,
+                mask=middle_mask,
+                annot=True, 
+                cmap=color_map, 
+                fmt='g',
+                cbar=True,
+                #annot_kws={"weight": "bold"},
+                #yticklabels=purchase_labels_w_alert,
+                ax=ax);
+
+
+    sns.heatmap(data=sorted_values,
+                # mask=top_and_bottom_mask,
+                #annot=True, 
+                cmap=color_map, 
+                fmt='g',
+                cbar = False,
+                yticklabels=labels_list,
+                ax=ax)
+
+    yticks=plt.gca().get_yticklabels()
+
+    for text in yticks:
+        if text.get_text() in top_5_channels:
+            text.set_weight('bold')
+            text.set_color('green')
+            #print('\u26A0 ' + text.get_text())
+            #text.set_text('\u26A0 ' + text.get_text())
+        if text.get_text() in bottom_5_channels:
+            text.set_weight('bold')
+            text.set_color('red')
+            
+    rewrite_txt_dict = {"Cost Per Visitor (Spend/Lift)":"Cost Per Visitor",
+                        "Cost Per Acquisition (Spend/Purchases)":"Cost Per Acquisition",
+                        "Conversion Rate (Purchases/Lift)%":"Conversion Rate"}        
+    
+    if field in rewrite_txt_dict.keys():
+        field = rewrite_txt_dict[field]
+    
+    y=plt.gca().get_yticks()
+    ax.tick_params(axis='y', left=False)
+    
+    if annotate_horizontal==True:
+        ax.axhline(horizontal_y_val, linestyle=':', color='blue')
+        ax.annotate(text=F'Avg {field} {format(cutoff_value, rounding)}', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='blue')
+
+    if hide_y_label:
+        plt.ylabel('')
+    plt.show();
+
+
+# %% [markdown]
+# ##### Attempt at make_heatmap2() and make_multiple_heatmaps() to plot multiple heatmaps at once
 
 # %%
-spend_labels
+def make_heatmap2(df, field, color_map, ax_to_plot_on, hide_y_label=False):
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    
+    # Get mean of values
+    field_mean = df[field].mean()
+    
+    # Sort purchases High to Low
+    sorted_values = df[[field]].sort_values(by=field, ascending=False)
+    
+    # Find index of channel that has a field value >= field_mean.  This is used to draw horizontal line in heatmap later.
+    horizontal_y_val = sorted_values[sorted_values[field] > field_mean].shape[0]
+    
+    # Create masks
+
+    ## Top 5 purchases mask
+    mask1 = sorted_values>=sorted_values[field][4]
+    ## Bottom 5 purchases mask
+    mask2 = sorted_values<=sorted_values[field][-5]
+
+    top_and_bottom_mask = mask1 | mask2
+    middle_mask = ~top_and_bottom_mask
+
+    # Create labels for y_ticks.  Keep top and bottom 5 labels, replace middle labels
+    # with empty string.
+    labels_list = []
+    for count, label in enumerate(sorted_values.index):
+        #print(count, label)
+        if count<5 or count>len(sorted_values.index)-6:
+            labels_list.append(label)
+        else:
+            labels_list.append('')
+
+    # # This part is needed if you want to get the values of Purchases to change the annotations (Annot) in the heatmap.  This keeps the top and bottom 5 values, but replaces the middle values with np.nan.  You can pass top_and_bottom_values to the sns.heatmap Annot arg to only annotate the top and bottom 5 values.
+
+    # top_and_bottom_values = []
+    # for i, boolean in enumerate(top_and_bottom_mask[field]):
+    #     if boolean == True:
+    #         purchases = sorted_values.iloc[i, 0]
+    #         top_and_bottom_values.append(purchases)
+    #         top_and_bottom_labels.append(top_and_bottom_mask.index.values[i])
+    #     else:
+    #         top_and_bottom_values.append(np.nan)
+
+    
+    # Unfortunately we need to hard code the names of the channels that are among the top and bottom 5 of Purchases, Spend, and Lift, b/c grabbing them programmatically is a little hard
+    top_5_channels = ['Willow Tv', 'One America News Network', 'Zeetv', 'Cnn', 'Msnbc']
+    bottom_5_channels = ['Fox Sports', 'Bloomberg', 'Comedy Central', 'Turner Network Tv', 'Cnbc World']
+
+
+    #fig, ax = plt.subplots(1,1,figsize=(2,10))
+
+    sns.heatmap(data=sorted_values,
+                mask=middle_mask,
+                annot=True, 
+                cmap=color_map, 
+                fmt='g',
+                cbar=True,
+                #annot_kws={"weight": "bold"},
+                #yticklabels=purchase_labels_w_alert,
+                ax=ax_to_plot_on);
+
+
+    sns.heatmap(data=sorted_values,
+                # mask=top_and_bottom_mask,
+                #annot=True, 
+                cmap=color_map, 
+                fmt='g',
+                cbar = False,
+                yticklabels=labels_list,
+                ax=ax_to_plot_on)
+
+    yticks=ax_to_plot_on.get_yticklabels()
+
+    for text in yticks:
+        if text.get_text() in top_5_channels:
+            text.set_weight('bold')
+            text.set_color('green')
+            #print('\u26A0 ' + text.get_text())
+            #text.set_text('\u26A0 ' + text.get_text())
+        if text.get_text() in bottom_5_channels:
+            text.set_weight('bold')
+            text.set_color('red')
+
+    #y=plt.gca().get_yticks()
+    ax_to_plot_on.tick_params(axis='y', left=False)
+    ax_to_plot_on.axhline(horizontal_y_val, linestyle=':', color='blue')
+    ax_to_plot_on.annotate(text=F'Avg {field} {field_mean:.0f}', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='blue')
+    
+    if hide_y_label:
+        plt.ylabel('')
+    plt.show();
 
 # %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Spend']].sort_values(by='Spend', ascending=False), annot=True, cmap='Reds', vmin=0, fmt='g', yticklabels=spend_labels);
+fig, ax = plt.subplots(1,2)
+make_heatmap2(df=report_for_client, field='Purchases', ax_to_plot_on=ax[0], color_map='Greys')
+make_heatmap2(df=report_for_client, field='Purchases', ax_to_plot_on=ax[1], color_map='Greys')
+
 
 # %%
-lift_sorted = report_for_client[['Lift']].sort_values(by='Lift', ascending=False)
+def make_multiple_heatmaps(i, j, df, field, color_map, hide_y_label=False):
+    fig, ax = plt.subplots(i, j, figsize=(2,10))
+    make_heatmap2(df, field, color_map, ax[0], hide_y_label)
+    make_heatmap2(df, field, color_map, ax[1], hide_y_label)
 
-lift_labels = []
-for count, label in enumerate(lift_sorted.index):
-    #print(count, label)
-    if count<5 or count>len(lift_sorted.index)-6:
-        lift_labels.append(label)
-    else:
-        lift_labels.append('')
 
 # %%
-lift_labels
+make_multiple_heatmaps(1, 2, report_for_client, 'Purchases', 'Blues')
+
+# %% [markdown]
+# #### Purchases, Spend, and Lift
 
 # %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Lift']].sort_values(by='Lift', ascending=False), annot=True, cmap='Reds', vmin=0, fmt='g', yticklabels=lift_labels);
+# Top Purchases, Spend, and Lift labels
+field1_top_labels = set(report_for_client['Purchases'].sort_values(ascending=False).index.values[0:5])
+field2_top_labels = set(report_for_client['Spend'].sort_values(ascending=False).index.values[0:5])
+field3_top_labels = set(report_for_client['Lift'].sort_values(ascending=False).index.values[0:5])
+
+## Use set logic to find which channels are in at least 2/3 of the top5 for Purchases, Spend, and Lift
+set1 = field1_top_labels.intersection(field2_top_labels)
+set2 = field1_top_labels.intersection(field3_top_labels)
+set3 = field2_top_labels.intersection(field3_top_labels)
+set4 = set1.intersection(set2, set3)
+at_least_top_2_of_3_spend_purchase_lift_labels = set1.union(set2, set3, set4)
+
+
+# Bottom Purchases, Spend, and Lift labels
+field1_bottom_labels = set(report_for_client['Purchases'].sort_values(ascending=False).index.values[-5:])
+field2_bottom_labels = set(report_for_client['Spend'].sort_values(ascending=False).index.values[-5:])
+field3_bottom_labels = set(report_for_client['Lift'].sort_values(ascending=False).index.values[-5:])
+
+## Use set logic to find which channels are in at least 2/3 of the bottom5 for Purchases, Spend, and Lift
+set1 = field1_bottom_labels.intersection(field2_bottom_labels)
+set2 = field1_bottom_labels.intersection(field3_bottom_labels)
+set3 = field2_bottom_labels.intersection(field3_bottom_labels)
+set4 = set1.intersection(set2, set3)
+at_least_bottom_2_of_3_spend_purchase_lift_labels = set1.union(set2, set3, set4)
+
+
+make_heatmap(df=report_for_client, 
+             field='Purchases', 
+             color_map='Greys', 
+             top_labels=at_least_top_2_of_3_spend_purchase_lift_labels, 
+             bottom_labels=at_least_bottom_2_of_3_spend_purchase_lift_labels)
+plt.show()
+
+
+make_heatmap(df=report_for_client, 
+             field='Spend', 
+             color_map='Greys', 
+             top_labels=at_least_top_2_of_3_spend_purchase_lift_labels, 
+             bottom_labels=at_least_bottom_2_of_3_spend_purchase_lift_labels,
+             hide_y_label=True)
+plt.show()
+
+
+make_heatmap(df=report_for_client, 
+             field='Lift', 
+             color_map='Greys', 
+             top_labels=at_least_top_2_of_3_spend_purchase_lift_labels, 
+             bottom_labels=at_least_bottom_2_of_3_spend_purchase_lift_labels, 
+             hide_y_label=True)
+plt.show()
+
+# %% [markdown]
+# #### Purchases and Cost Per Visitor
 
 # %%
-mean_cost_per_visitor = report_for_client['Cost Per Visitor (Spend/Lift)'].mean()
-mean_cost_per_visitor
+# Use set logic to find which channels are in the top5 for purchases and cost per visitor
+top_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[0:5])
+top_5_cost_per_visitor=set(report_for_client['Cost Per Visitor (Spend/Lift)'].sort_values(ascending=True).index.values[0:5])
+
+top_5_purchases_and_cost_per_visitor = top_5_purchases.intersection(top_5_cost_per_visitor)
+
+# Use set logic to find which channels are in the bottom5 for purchases and cost per visitor
+bottom_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[-5:])
+bottom_5_cost_per_visitor=set(report_for_client['Cost Per Visitor (Spend/Lift)'].sort_values(ascending=True).index.values[-5:])
+
+bottom_5_purchases_and_cost_per_visitor = bottom_5_purchases.intersection(bottom_5_cost_per_visitor)
+
+
+
+make_heatmap(df=report_for_client, 
+             field='Purchases', 
+             color_map='Greys', 
+             top_labels=top_5_purchases_and_cost_per_visitor, 
+             bottom_labels=bottom_5_purchases_and_cost_per_visitor, 
+             annotate_horizontal=False)
+plt.show()
+
+make_heatmap(df=report_for_client, 
+             field='Cost Per Visitor (Spend/Lift)', 
+             cutoff_value = overall_cost_per_visitor, 
+             asc=True, 
+             rounding=".2f",
+             top_labels=top_5_purchases_and_cost_per_visitor, 
+             bottom_labels=bottom_5_purchases_and_cost_per_visitor, 
+             color_map='Greys', 
+             hide_y_label=True)
+plt.show()
+
+# %% [markdown]
+# #### Purchases and Cost Per Acquisition
 
 # %%
-cost_per_visitor_sorted = report_for_client[['Cost Per Visitor (Spend/Lift)']].sort_values(by='Cost Per Visitor (Spend/Lift)', ascending=True)
+top_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[0:5])
+top_5_cost_per_acquisition=set(report_for_client['Cost Per Acquisition (Spend/Purchases)'].sort_values(ascending=True).index.values[0:5])
 
-cost_per_visitor_labels = []
-for count, label in enumerate(cost_per_visitor_sorted.index):
-    #print(count, label)
-    if count<5 or count>len(cost_per_visitor_sorted.index)-6:
-        cost_per_visitor_labels.append(label)
-    else:
-        cost_per_visitor_labels.append('')
+top_5_purchases_and_cost_per_acquisition = top_5_purchases.intersection(top_5_cost_per_acquisition)
 
-# %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Cost Per Visitor (Spend/Lift)']].sort_values(by='Cost Per Visitor (Spend/Lift)', ascending=True), annot=True, cmap='Reds', vmin=0, fmt='g', yticklabels=cost_per_visitor_labels);
 
-# %%
-mean_cpa = report_for_client[report_for_client['Purchases']>0]['Cost Per Acquisition (Spend/Purchases)'].mean()
-mean_cpa
+bottom_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[-5:])
+bottom_5_cost_per_acquisition=set(report_for_client['Cost Per Acquisition (Spend/Purchases)'].sort_values(ascending=True).index.values[-5:])
 
-# %%
-cpa_sorted = report_for_client[['Cost Per Acquisition (Spend/Purchases)']].sort_values(by='Cost Per Acquisition (Spend/Purchases)', ascending=True)
+bottom_5_purchases_and_cost_per_acquisition = bottom_5_purchases.intersection(bottom_5_cost_per_acquisition)
 
-cpa_labels = []
-for count, label in enumerate(cpa_sorted.index):
-    #print(count, label)
-    if count<5 or count>len(cpa_sorted.index)-6:
-        cpa_labels.append(label)
-    else:
-        cpa_labels.append('')
+make_heatmap(df=report_for_client, 
+             field='Purchases', 
+             color_map='Greys', 
+             top_labels=top_5_purchases_and_cost_per_acquisition, 
+             bottom_labels=bottom_5_purchases_and_cost_per_acquisition, 
+             annotate_horizontal=False)
+plt.show()
 
-# %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-ax = sns.heatmap(report_for_client[['Cost Per Acquisition (Spend/Purchases)']].sort_values(by='Cost Per Acquisition (Spend/Purchases)', ascending=True)[:-2], annot=True, cmap='Reds', vmin=0, fmt='g', yticklabels=cpa_labels);
+make_heatmap(df=report_for_client, 
+             field='Cost Per Acquisition (Spend/Purchases)', 
+             cutoff_value = overall_cost_per_acquisition,
+             top_labels = top_5_purchases_and_cost_per_acquisition,
+             bottom_labels = bottom_5_purchases_and_cost_per_acquisition,
+             asc=True, 
+             rounding=".02f",
+             color_map='Greys', 
+             hide_y_label=True)
+plt.show()
 
-# %%
-mean_conversion_rate = report_for_client['Conversion Rate (Purchases/Lift)%'].mean()
-mean_conversion_rate
+# %% [markdown]
+# #### Purchases and Conversion Rate
 
 # %%
-conversion_rate_sorted = report_for_client[['Conversion Rate (Purchases/Lift)%']].sort_values(by='Conversion Rate (Purchases/Lift)%', ascending=False)
+top_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[0:5])
+top_5_conversion_rate=set(report_for_client['Conversion Rate (Purchases/Lift)%'].sort_values(ascending=False).index.values[0:5])
 
-conversion_rate_labels = []
-for count, label in enumerate(conversion_rate_sorted.index):
-    #print(count, label)
-    if count<5 or count>len(conversion_rate_sorted.index)-6:
-        conversion_rate_labels.append(label)
-    else:
-        conversion_rate_labels.append('')
+top_5_purchases_and_conversion_rate = top_5_purchases.intersection(top_5_conversion_rate)
+
+
+bottom_5_purchases=set(report_for_client['Purchases'].sort_values(ascending=False).index.values[-5:])
+bottom_5_conversion_rate=set(report_for_client['Conversion Rate (Purchases/Lift)%'].sort_values(ascending=False).index.values[-5:])
+
+bottom_5_purchases_and_conversion_rate = bottom_5_purchases.intersection(bottom_5_conversion_rate)
+
+make_heatmap(df=report_for_client, 
+             field='Purchases', 
+             color_map='Greys', 
+             top_labels=top_5_purchases_and_conversion_rate,
+             bottom_labels=bottom_5_purchases_and_conversion_rate, 
+             annotate_horizontal=False)
+plt.show()
+
+make_heatmap(df=report_for_client, 
+             field='Conversion Rate (Purchases/Lift)%', 
+             cutoff_value = overall_conversion_rate, 
+             rounding=".1f",
+             top_labels = top_5_purchases_and_conversion_rate,
+             bottom_labels = bottom_5_purchases_and_conversion_rate,
+             color_map='Greys', 
+             hide_y_label=True)
+plt.show()
+
 
 # %%
-conversion_rate_labels
 
 # %%
-fig, ax = plt.subplots(1,1,figsize=(2,10))
-sns.heatmap(report_for_client[['Conversion Rate (Purchases/Lift)%']].sort_values(by='Conversion Rate (Purchases/Lift)%', ascending=False), annot=True, cmap='Reds', vmin=0, fmt='g', yticklabels=conversion_rate_labels);
-
 
 # %% [markdown]
 # ## Scatter Plots
@@ -962,13 +1217,11 @@ make_scatter2(df=report_for_client,
              color_1='red',
              color_2='green')
 
-# %%
-purchases_spend_lift_by_network.query('Spend == 0')
-
-# %%
+# %% [markdown]
+# ## Bar Charts
 
 # %% [markdown]
-# ## Which Networks have no spend but we see purchases?
+# ### Channels with no spend, but had purchases.  Excluding 'Other' and '(Blank)'
 
 # %%
 no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Exit Survey` != 'Other' & `Exit Survey` != '(Blank)'")
@@ -986,16 +1239,12 @@ no_spend_but_purchases
 no_spend_but_purchases['percent_of_all_purchases'] = no_spend_but_purchases['Purchases'] / total_purchases_from_campaign * 100
 
 # %%
-no_spend_but_purchases
-
-# %%
 mean_num_purchases_with_spend = report_for_client['Purchases'].mean()
 mean_num_purchases_from_campaign = purchases_spend_lift_by_network['Purchases'].mean()
 
 # %%
 import matplotlib.patheffects as pe
 
-# %%
 fig, ax = plt.subplots(1,1,figsize=(8,6))
 no_spend_but_purchases['Purchases'].plot(kind='barh', ax=ax, edgecolor='black')
 ax.set_xlabel('Number of Purchases on Exit Survey')
@@ -1019,11 +1268,19 @@ text2 = ax.annotate(F'Mean number of\npurchases overall',
 ax.invert_yaxis();
 
 # %%
-fig, ax = plt.subplots(1,1,figsize=(8,6))
-no_spend_but_purchases['percent_of_all_purchases'].plot(kind='barh', ax=ax)
-ax.set_xlabel('Percent of Purchases on Exit Survey')
-ax.set_title('Channels where spend = 0')
-ax.invert_yaxis();
+
+# %%
+
+# %% [markdown]
+# # Scratch Work
+
+# %% [markdown]
+# ## Which networks have no spend?
+
+# %%
+purchases_spend_lift_by_network.query('Spend == 0')
+
+# %%
 
 # %%
 num_purchases_no_spend = report_for_client[report_for_client['Spend']==0].groupby("Exit Survey Source")['Purchases'].agg('sum')
@@ -1039,10 +1296,10 @@ perc_purchases_no_spend
 # %%
 
 # %% [markdown]
-# # Graphing
+# ## Old Graphing
 
 # %% [markdown]
-# ## Bar Charts
+# ### Bar Charts
 
 # %%
 # ax = report_purchases_sorted[0:10].plot(kind='barh', y='Purchases', title='Top 10 Networks by Purchase', legend=False)
@@ -1108,7 +1365,10 @@ perc_purchases_no_spend
 # %%
 
 # %% [markdown]
-# ### Manual Plots
+# ### Scatter Plots
+
+# %% [markdown]
+# #### Adjusting annotation text manually
 
 # %%
 #Q1: High Purchases, High Spend, check cost per acquisition?
@@ -1316,7 +1576,7 @@ plt.text(x=mean_conversion_rate+0.05, y=45_000, s=F'Mean Conversion Rate: {round
 plt.show();
 
 # %% [markdown]
-# #### Where you started using adjustText
+# #### Where you started using adjustText to adjust annotation text automatically
 
 # %%
 from adjustText import adjust_text
@@ -1649,112 +1909,5 @@ for column in report_for_client.columns:
 
 # %% [markdown]
 # # Done
-
-# %%
-
-# %% [markdown]
-# # Scratch work
-
-# %%
-airings_data['Network'].unique()
-
-# %%
-lookup_data['Airings'].unique()
-
-# %%
-for ticker in airings_data['Network'].unique():
-    print(ticker, ticker in lookup_data['Airings'].unique())
-
-# %% tags=[]
-month_stamps = purchase_data_transpose.groupby(pd.Grouper(freq='M')).sum().index.values
-
-# %%
-month_df = pd.DataFrame(data=month_stamps)
-month_df['key']=0
-month_df
-
-# %%
-temp_lookup_data = lookup_data.copy()
-temp_lookup_data['key'] = 0
-temp_lookup_data.merge(month_df)
-
-# %%
-airings_data.groupby(['Network', pd.Grouper(key='Date/Time ET', freq='M')]).sum().reset_index()
-
-# %%
-new_report = temp_lookup_data.merge(month_df).merge(airings_data.groupby(['Network', pd.Grouper(key='Date/Time ET', freq='M')]).sum().reset_index(), left_on=['Airings', 0], right_on=['Network', 'Date/Time ET'], how='left')
-new_report
-
-# %%
-new_report.drop(columns=['Airings', 'key', 'Network', 'Date/Time ET'], inplace=True)
-
-# %%
-new_report.head()
-
-# %%
-purchase_data_transpose.groupby(pd.Grouper(freq='M')).sum().transpose().head().stack().to_frame().reset_index()
-
-# %%
-newer_report = new_report.merge(purchase_data_transpose.groupby(pd.Grouper(freq='M')).sum().transpose().stack().to_frame().reset_index(), left_on=['Exit Survey', 0], right_on=['Source', 'date'], how='left')
-
-newer_report
-
-# %%
-newest_report = newer_report.drop(columns=['0_x', 'Source', 'date']).rename(columns={'key_1': 'date', '0_y':'Purchases'})#.set_index(['Exit Survey', 'date'])
-newest_report
-
-# %%
-newest_report['Exit Survey'] = newest_report['Exit Survey'].str.replace('_', ' ').str.title()
-
-# %%
-newest_report.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
-
-# %%
-newest_report = newest_report.set_index(['Exit Survey Source', 'date'])#.drop(labels=['Airings', 'Network', 'Date/Time ET', 'Source'], axis=1)
-
-# %%
-newest_report.fillna(0, inplace=True)
-
-# %%
-newest_report = newest_report[['Purchases', 'Spend', 'Lift']]
-
-# %% [markdown]
-# ## Computing Metrics by Network and Month
-
-# %%
-newest_report['Conversion Rate (Purchases/Lift)%'] = newest_report['Purchases'] / newest_report['Lift'] * 100
-
-newest_report['Cost Per Acquisition (Spend/Purchases)'] = newest_report['Spend'] / newest_report['Purchases']
-
-newest_report['Cost Per Visitor (Spend/Lift)'] = newest_report['Spend'] / newest_report['Lift']
-
-newest_report['Percent of Purchases'] = newest_report['Purchases'] / sum(newest_report['Purchases'].fillna(0)) * 100
-
-newest_report['Percent of Spend'] = newest_report['Spend'] / sum(newest_report['Spend'].fillna(0)) * 100
-
-newest_report['Percent Pur > Percent Spend'] = newest_report['Percent of Purchases'] > newest_report['Percent of Spend']
-
-# %% tags=[]
-newest_report = newest_report.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)#.dropna(how='all').fillna(0)
-
-newest_report.query('(Spend != 0) & (Purchases != 0)', inplace=True)
-
-# %%
-newest_report = newest_report.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
-
-newest_report[['Purchases', 'Lift']] = newest_report[['Purchases', 'Lift']].astype(int)
-
-newest_report = newest_report.sort_values('Exit Survey Source')
-
-# %%
-f = open('./reports_output/html/new_monthly_report.html','w')
-a = newest_report.to_html(col_space='100px')
-f.write(a)
-f.close()
-
-pdfkit.from_file('./reports_output/html/new_monthly_report.html', './reports_output/pdfs/new_monthly_report.pdf')
-
-# %%
-purchases_by_network
 
 # %%
