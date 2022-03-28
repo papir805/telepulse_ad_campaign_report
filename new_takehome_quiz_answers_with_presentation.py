@@ -1250,8 +1250,22 @@ no_spend_but_purchases
 no_spend_but_purchases['percent_of_all_purchases'] = no_spend_but_purchases['Purchases'] / total_purchases_from_campaign * 100
 
 # %%
-mean_num_purchases_with_spend = report_for_client['Purchases'].mean()
-mean_num_purchases_from_campaign = purchases_spend_lift_by_network['Purchases'].mean()
+mean_num_purchases_with_spend = round(report_for_client['Purchases'].mean(), 0)
+mean_num_purchases_from_campaign = round(purchases_spend_lift_by_network['Purchases'].mean(), 0)
+
+# %%
+no_spend_but_above_mean_purchases_from_campaign_labels = no_spend_but_purchases[no_spend_but_purchases['Purchases'] > mean_num_purchases_from_campaign].index.values
+
+# %%
+# no_spend_but_purchases['above_mean_purchases_from_campaign'] = no_spend_but_purchases['Purchases'] > mean_num_purchases_from_campaign
+
+# %%
+no_spend_yticks = []
+for label in no_spend_but_purchases.index.values:
+    if label in no_spend_but_above_mean_purchases_from_campaign_labels:
+        no_spend_yticks.append(label)
+    else:
+        no_spend_yticks.append('')
 
 # %%
 import matplotlib.patheffects as pe
@@ -1263,24 +1277,31 @@ ax.set_title('Channels where spend = 0')
 
 
 ax.axvline(mean_num_purchases_with_spend, color='red', linestyle='--')
-text1 = ax.annotate(F'Mean number of\npurchases from channels\nthat had spending',
+text1 = ax.annotate(F'Mean purchases\nfrom channels\nthat had spending',
                 xy=(mean_num_purchases_with_spend, 0), xycoords='data',
-                xytext=(5, -175), textcoords='offset pixels', size=12,
+                xytext=(5, -175), textcoords='offset pixels', size=11,
                 color='red', ha='left')
-# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=0.8, foreground='black'), pe.Normal()])
+# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=2.5, foreground='black'), pe.Normal()])
 
 ax.axvline(mean_num_purchases_from_campaign, color='darkviolet', linestyle='--')
-text2 = ax.annotate(F'Mean number of\npurchases overall',
+text2 = ax.annotate(F'Mean purchases\noverall',
                 xy=(mean_num_purchases_from_campaign, 0), xycoords='data',
                 xytext=(5, -175), textcoords='offset pixels', size=11,
                 color='darkviolet', ha='left')
-text2.set_path_effects(path_effects=[pe.withStroke(linewidth=0.6, foreground='black'), pe.Normal()])
+# text2.set_path_effects(path_effects=[pe.withStroke(linewidth=1.3, foreground='black'), pe.Normal()])
+
+ax.set_yticklabels(no_spend_yticks)
+
+yticks=plt.gca().get_yticklabels()
+
+
+
+for text in yticks:
+    if text.get_text() in no_spend_but_above_mean_purchases_from_campaign_labels:
+        text.set_weight('bold')
+        text.set_color('green')
 
 ax.invert_yaxis();
-
-# %%
-
-# %%
 
 # %% [markdown]
 # # Scratch Work
