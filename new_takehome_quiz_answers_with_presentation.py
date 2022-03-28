@@ -537,7 +537,9 @@ def make_heatmap(df, field, color_map, top_labels, bottom_labels, rounding=".0f"
     
     if annotate_horizontal==True:
         ax.axhline(horizontal_y_val, linestyle=':', color='blue')
-        ax.annotate(text=F'Avg {field} {format(cutoff_value, rounding)}', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='blue')
+        text = ax.annotate(text=F'Avg {field} {format(cutoff_value, rounding)}:', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='#2596be')
+        # import matplotlib.patheffects as pe
+        # text.set_path_effects(path_effects=[pe.withStroke(linewidth=0.8, foreground='black'), pe.Normal()])
 
     if hide_y_label:
         plt.ylabel('')
@@ -636,7 +638,7 @@ def make_heatmap2(df, field, color_map, ax_to_plot_on, hide_y_label=False):
     #y=plt.gca().get_yticks()
     ax_to_plot_on.tick_params(axis='y', left=False)
     ax_to_plot_on.axhline(horizontal_y_val, linestyle=':', color='blue')
-    ax_to_plot_on.annotate(text=F'Avg {field} {field_mean:.0f}', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='blue')
+    ax_to_plot_on.annotate(text=F'Avg {field} {field_mean:.0f}:', xy=(0, horizontal_y_val), xytext=(-10, -5), textcoords='offset pixels', ha='right', color='blue')
     
     if hide_y_label:
         plt.ylabel('')
@@ -943,11 +945,11 @@ def make_scatter(df, x_field, y_field, x_units='', y_units='', color_1='green', 
             only_move={'points':'y', 'texts':'y'},
             arrowprops=dict(arrowstyle="->", color='k', lw=0.5))
 
-    plt.show();
+    return fig, ax;
 
 
 # %%
-def make_scatter2(df,
+def make_scatter_with_size_adjustment(df,
                   x_field,
                   y_field,
                   size_scale,
@@ -1082,7 +1084,7 @@ def make_scatter2(df,
             only_move={'points':'y', 'texts':'y'},
             arrowprops=dict(arrowstyle="->", color='k', lw=0.5))
 
-    plt.show();
+    return fig, ax;
 
 # %%
 scale=10
@@ -1091,80 +1093,104 @@ scale=10
 # #### Purchases vs. Spend
 
 # %%
-make_scatter(df=report_for_client,
-             x_field='Purchases',
-             y_field='Spend',
-             #size=False,
-             x_units='',
-             y_units='$',
-             color_1='red',
-             color_2='green')
+willow_tv = report_for_client.query("`Exit Survey Source` == 'Willow Tv'")
+willow_tv_purchases = willow_tv['Purchases']
+willow_tv_spend = willow_tv['Spend']
+willow_tv_lift = willow_tv['Lift']
 
 # %%
-make_scatter2(df=report_for_client,
-             x_field='Purchases',
-             y_field='Spend',
-             size_scale=scale,
-             x_units='',
-             y_units='$',
-             color_1='red',
-             color_2='green')
+fig, ax = make_scatter(df=report_for_client,
+                       x_field='Purchases',
+                       y_field='Spend', 
+                       #size=False,x_units='', 
+                       y_units='$', 
+                       color_1='red',
+                       color_2='green')
+ax.scatter(willow_tv_purchases, willow_tv_spend, c='blue')
+text1 = ax.annotate(text='Willow Tv',
+            xy=(willow_tv_purchases, willow_tv_spend),
+            xytext=(-5, -20), textcoords='offset pixels',
+            ha='right',
+            color='blue',
+            alpha=0.3)
+# import matplotlib.patheffects as pe
+# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=2, foreground='black'), pe.Normal()])
+
+# Label x and y values of outlier on xticks and yticks
+current_xticks = ax.get_xticks()
+updated_xticks = np.append(current_xticks, willow_tv['Purchases'])
+ax.set_xticks(updated_xticks)
+
+current_yticks = ax.get_yticks()
+updated_yticks = np.append(current_yticks, willow_tv['Spend'])
+ax.set_yticks(updated_yticks)
+
+plt.show()
 
 # %% [markdown]
 # #### Lift vs. Purchases
 
 # %%
-make_scatter(report_for_client,
-             x_field='Lift',
-             y_field='Purchases',
-             x_units='',
-             y_units='')
+fig, ax = make_scatter(report_for_client,
+                       x_field='Lift',
+                       y_field='Purchases',
+                       x_units='',
+                       y_units='')
 
-# %%
-make_scatter2(report_for_client,
-             x_field='Lift',
-             y_field='Purchases',
-             size_scale=scale,
-             x_units='',
-             y_units='')
+ax.scatter(willow_tv_lift, willow_tv_purchases, c='blue')
+text1 = ax.annotate(text='Willow Tv',
+            xy=(willow_tv_lift, willow_tv_purchases),
+            xytext=(-5, -20), textcoords='offset pixels',
+            ha='right',
+            color='blue',
+            alpha=0.3)
+
+# Label x and y values of outlier on xticks and yticks
+current_xticks = ax.get_xticks()
+updated_xticks = np.append(current_xticks, willow_tv['Lift'])
+ax.set_xticks(updated_xticks)
+
+current_yticks = ax.get_yticks()
+updated_yticks = np.append(current_yticks, willow_tv['Purchases'])
+ax.set_yticks(updated_yticks)
+
+plt.show()
 
 # %% [markdown]
 # #### Lift vs. Spend
 
 # %%
-make_scatter(report_for_client,
-             x_field='Lift',
-             y_field='Spend',
-             #size=True,
-             x_units='',
-             y_units='$',
-             color_1='red',
-             color_2='green')
+fig, ax = make_scatter_with_size_adjustment(report_for_client,
+                                            x_field='Lift',
+                                            y_field='Spend',
+                                            size_scale=scale,
+                                            x_units='',
+                                            y_units='$',
+                                            color_1='red',
+                                            color_2='green')
 
-# %%
-make_scatter2(report_for_client,
-             x_field='Lift',
-             y_field='Spend',
-             size_scale=scale,
-             x_units='',
-             y_units='$',
-             color_1='red',
-             color_2='green')
+text1 = ax.annotate(text='Willow Tv',
+            xy=(willow_tv_lift, willow_tv_spend),
+            xytext=(-5, -20), textcoords='offset pixels',
+            ha='right',
+            color='blue',
+            alpha=0.3)
+
+current_xticks = ax.get_xticks()
+updated_xticks = np.append(current_xticks, willow_tv['Lift'])
+ax.set_xticks(updated_xticks)
+
+current_yticks = ax.get_yticks()
+updated_yticks = np.append(current_yticks, willow_tv['Spend'])
+ax.set_yticks(updated_yticks)
+
+plt.show()
 
 # %% [markdown]
 # #### Conversion Rate vs. Spend
 
 # %%
-make_scatter(report_for_client,
-             x_field='Conversion Rate (Purchases/Lift)%',
-             y_field='Spend',
-             x_units='%',
-             y_units='$',
-             color_1='red',
-             color_2='green')
-
-# %%
-make_scatter2(report_for_client,
+make_scatter_with_size_adjustment(report_for_client,
              x_field='Conversion Rate (Purchases/Lift)%',
              y_field='Spend',
              size_scale=scale,
@@ -1172,21 +1198,13 @@ make_scatter2(report_for_client,
              y_units='$',
              color_1='red',
              color_2='green')
+plt.show();
 
 # %% [markdown]
 # #### Conversion Rate vs. Cost Per Acquisition
 
 # %%
-make_scatter(report_for_client,
-             x_field='Conversion Rate (Purchases/Lift)%',
-             y_field='Cost Per Acquisition (Spend/Purchases)',
-             x_units='%',
-             y_units='$',
-             color_1='red',
-             color_2='green')
-
-# %%
-make_scatter2(report_for_client,
+make_scatter_with_size_adjustment(report_for_client,
              x_field='Conversion Rate (Purchases/Lift)%',
              y_field='Cost Per Acquisition (Spend/Purchases)',
              size_scale=scale,
@@ -1194,21 +1212,13 @@ make_scatter2(report_for_client,
              y_units='$',
              color_1='red',
              color_2='green')
+plt.show();
 
 # %% [markdown]
 # #### Conversion Rate vs. Cost Per Visitor
 
 # %%
-make_scatter(df=report_for_client,
-             x_field="Conversion Rate (Purchases/Lift)%",
-             y_field="Cost Per Visitor (Spend/Lift)",
-             x_units="%",
-             y_units="$",
-             color_1='red',
-             color_2='green')
-
-# %%
-make_scatter2(df=report_for_client,
+make_scatter_with_size_adjustment(df=report_for_client,
              x_field="Conversion Rate (Purchases/Lift)%",
              y_field="Cost Per Visitor (Spend/Lift)",
              size_scale=scale,
@@ -1216,11 +1226,12 @@ make_scatter2(df=report_for_client,
              y_units="$",
              color_1='red',
              color_2='green')
+plt.show();
 
-# %% [markdown]
+# %% [markdown] tags=[]
 # ## Bar Charts
 
-# %% [markdown]
+# %% [markdown] tags=[]
 # ### Channels with no spend, but had purchases.  Excluding 'Other' and '(Blank)'
 
 # %%
@@ -1254,16 +1265,16 @@ ax.set_title('Channels where spend = 0')
 ax.axvline(mean_num_purchases_with_spend, color='red', linestyle='--')
 text1 = ax.annotate(F'Mean number of\npurchases from channels\nthat had spending',
                 xy=(mean_num_purchases_with_spend, 0), xycoords='data',
-                xytext=(5, -175), textcoords='offset pixels',
+                xytext=(5, -175), textcoords='offset pixels', size=12,
                 color='red', ha='left')
-# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=0.5, foreground='black'), pe.Normal()])
+# text1.set_path_effects(path_effects=[pe.withStroke(linewidth=0.8, foreground='black'), pe.Normal()])
 
 ax.axvline(mean_num_purchases_from_campaign, color='darkviolet', linestyle='--')
 text2 = ax.annotate(F'Mean number of\npurchases overall',
                 xy=(mean_num_purchases_from_campaign, 0), xycoords='data',
-                xytext=(5, -175), textcoords='offset pixels',
+                xytext=(5, -175), textcoords='offset pixels', size=11,
                 color='darkviolet', ha='left')
-# text2.set_path_effects(path_effects=[pe.withStroke(linewidth=0.5, foreground='black'), pe.Normal()])
+text2.set_path_effects(path_effects=[pe.withStroke(linewidth=0.6, foreground='black'), pe.Normal()])
 
 ax.invert_yaxis();
 
