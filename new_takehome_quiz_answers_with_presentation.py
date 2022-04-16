@@ -24,8 +24,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # %%
-purchase_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Purchase Exit Survey Data')
-airings_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Airings')
+purchase_data = pd.read_excel("./dataset.xlsx", sheet_name='Purchase Exit Survey Data')
+airings_data = pd.read_excel("./dataset.xlsx", sheet_name='Airings')
 
 # The first row of Lookup table says "Lookup table for survey response field to airings network ticker symbol."  Assuming the first row always says that, we can drop it.
 lookup_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Lookup', skiprows=1)
@@ -355,6 +355,17 @@ report_for_client
 report_for_client_by_month
 
 # %% [markdown]
+# ## Report of channels where Spend = 0
+
+# %%
+channels_no_spend = purchases_spend_lift_by_network.query('Spend == 0')['Purchases'].to_frame()
+
+channels_no_spend.sort_values(by='Purchases', ascending=False, inplace=True)
+
+# %%
+purchases_spend_lift_by_network.query('Spend == 0')['Purchases'].to_frame().sort_index()
+
+# %% [markdown]
 # ## Exporting Results to PDF Files
 
 # %%
@@ -374,6 +385,14 @@ f.write(a)
 f.close()
 
 pdfkit.from_file('./reports_output/html/report_for_client_by_month.html', './reports_output/pdfs/report_for_client_by_month.pdf')
+
+# %%
+f = open('./reports_output/html/report_channels_no_spend.html','w')
+a = channels_no_spend.to_html(col_space='100px')
+f.write(a)
+f.close()
+
+pdfkit.from_file('./reports_output/html/report_channels_no_spend.html', './reports_output/pdfs/report_channels_no_spend.pdf')
 
 # %% [markdown]
 # # Presentation 
@@ -938,6 +957,7 @@ def make_scatter(df, x_field, y_field, x_units='', y_units='', color_1='green', 
     #ax.axes.xaxis.set_ticklabels([])
     ax.axes.set_yticks([0, y_field_mean])
     #ax.axes.yaxis.set_ticklabels([])
+    
     adjust_text(texts, 
             force_text=(1,1),
             force_points=(1,1),
@@ -962,7 +982,8 @@ def make_scatter_with_size_adjustment(df,
                   expand_objects=(3,3),
                   force_text=(1,1),
                   force_points=(1,1),
-                  force_objects=(1,1)):
+                  force_objects=(1,1),
+                  annotate_text=True):
     
     from adjustText import adjust_text
     
@@ -1031,10 +1052,11 @@ def make_scatter_with_size_adjustment(df,
     x_coords = [y for (x,y,z,c) in together]
     y_coords = [z for (x,y,z,c) in together]
     colors = [c for (x,y,z,c) in together]
-
-    texts = []
-    for x, y, s, c in zip(x_coords, y_coords, text, colors):
-        texts.append(plt.text(x, y, s, color=c))
+    
+    if annotate_text==True:
+        texts = []
+        for x, y, s, c in zip(x_coords, y_coords, text, colors):
+            texts.append(plt.text(x, y, s, color=c))
 
     
     # I should lookup how to do this with regex to make things easier...
@@ -1074,15 +1096,17 @@ def make_scatter_with_size_adjustment(df,
     #ax.axes.xaxis.set_ticklabels([])
     ax.axes.set_yticks([0, y_field_mean])
     #ax.axes.yaxis.set_ticklabels([])
-    adjust_text(texts,
-            expand_text=expand_text,
-            expand_points=expand_points,
-            expand_objects=expand_objects,
-            force_text=force_text,
-            force_points=force_points,
-            force_objects=force_objects,
-            only_move={'points':'y', 'texts':'y'},
-            arrowprops=dict(arrowstyle="->", color='k', lw=0.5))
+    
+    if annotate_text == True:
+        adjust_text(texts,
+                expand_text=expand_text,
+                expand_points=expand_points,
+                expand_objects=expand_objects,
+                force_text=force_text,
+                force_points=force_points,
+                force_objects=force_objects,
+                only_move={'points':'y', 'texts':'y'},
+                arrowprops=dict(arrowstyle="->", color='k', lw=0.5))
 
     return fig, ax;
 
@@ -1090,7 +1114,7 @@ def make_scatter_with_size_adjustment(df,
 scale=10
 
 # %% [markdown]
-# #### Purchases vs. Spend
+# #### Spend vs. Purchases
 
 # %%
 willow_tv = report_for_client.query("`Exit Survey Source` == 'Willow Tv'")
@@ -1100,15 +1124,16 @@ willow_tv_lift = willow_tv['Lift']
 
 # %%
 fig, ax = make_scatter(df=report_for_client,
-                       x_field='Purchases',
-                       y_field='Spend', 
-                       #size=False,x_units='', 
-                       y_units='$', 
-                       color_1='red',
-                       color_2='green')
-ax.scatter(willow_tv_purchases, willow_tv_spend, c='blue')
+                       x_field='Spend',
+                       y_field='Purchases', 
+                       #size=False,
+                       x_units='$', 
+                       y_units='', 
+                       color_1='green',
+                       color_2='red')
+ax.scatter(willow_tv_spend, willow_tv_purchases, c='blue')
 text1 = ax.annotate(text='Willow Tv',
-            xy=(willow_tv_purchases, willow_tv_spend),
+            xy=(willow_tv_spend, willow_tv_purchases),
             xytext=(-5, -20), textcoords='offset pixels',
             ha='right',
             color='blue',
@@ -1118,11 +1143,11 @@ text1 = ax.annotate(text='Willow Tv',
 
 # Label x and y values of outlier on xticks and yticks
 current_xticks = ax.get_xticks()
-updated_xticks = np.append(current_xticks, willow_tv['Purchases'])
+updated_xticks = np.append(current_xticks, willow_tv['Spend'])
 ax.set_xticks(updated_xticks)
 
 current_yticks = ax.get_yticks()
-updated_yticks = np.append(current_yticks, willow_tv['Spend'])
+updated_yticks = np.append(current_yticks, willow_tv['Purchases'])
 ax.set_yticks(updated_yticks)
 
 plt.show()
@@ -1157,47 +1182,48 @@ ax.set_yticks(updated_yticks)
 plt.show()
 
 # %% [markdown]
-# #### Lift vs. Spend
+# #### Spend vs. Lift
 
 # %%
 fig, ax = make_scatter_with_size_adjustment(report_for_client,
-                                            x_field='Lift',
-                                            y_field='Spend',
+                                            x_field='Spend',
+                                            y_field='Lift',
                                             size_scale=scale,
                                             x_units='',
                                             y_units='$',
-                                            color_1='red',
-                                            color_2='green')
-
+                                            color_1='green',
+                                            color_2='red')
+ax.scatter(willow_tv_spend, willow_tv_lift, c='blue')
 text1 = ax.annotate(text='Willow Tv',
-            xy=(willow_tv_lift, willow_tv_spend),
+            xy=(willow_tv_spend, willow_tv_lift),
             xytext=(-5, -20), textcoords='offset pixels',
             ha='right',
             color='blue',
             alpha=0.3)
 
 current_xticks = ax.get_xticks()
-updated_xticks = np.append(current_xticks, willow_tv['Lift'])
+updated_xticks = np.append(current_xticks, willow_tv['Spend'])
 ax.set_xticks(updated_xticks)
 
 current_yticks = ax.get_yticks()
-updated_yticks = np.append(current_yticks, willow_tv['Spend'])
+updated_yticks = np.append(current_yticks, willow_tv['Lift'])
 ax.set_yticks(updated_yticks)
 
 plt.show()
 
 # %% [markdown]
-# #### Conversion Rate vs. Spend
+# #### Spend vs. Conversion Rate
 
 # %%
 make_scatter_with_size_adjustment(report_for_client,
-             x_field='Conversion Rate (Purchases/Lift)%',
-             y_field='Spend',
+             x_field='Spend',
+             y_field='Conversion Rate (Purchases/Lift)%',
              size_scale=scale,
-             x_units='%',
-             y_units='$',
-             color_1='red',
-             color_2='green')
+             x_units='$',
+             y_units='%',
+             color_1='green',
+             color_2='red',
+             annotate_text=True)
 plt.show();
 
 # %% [markdown]
@@ -1227,6 +1253,9 @@ make_scatter_with_size_adjustment(df=report_for_client,
              color_1='red',
              color_2='green')
 plt.show();
+
+# %%
+report_for_client["Cost Per Visitor (Spend/Lift)"].mean()
 
 # %% [markdown] tags=[]
 # ## Bar Charts
@@ -1284,7 +1313,7 @@ text1 = ax.annotate(F'Mean purchases\nfrom channels\nthat had spending',
 # text1.set_path_effects(path_effects=[pe.withStroke(linewidth=2.5, foreground='black'), pe.Normal()])
 
 ax.axvline(mean_num_purchases_from_campaign, color='darkviolet', linestyle='--')
-text2 = ax.annotate(F'Mean purchases\noverall',
+text2 = ax.annotate(F'Mean purchases\nfrom exit survey',
                 xy=(mean_num_purchases_from_campaign, 0), xycoords='data',
                 xytext=(5, -175), textcoords='offset pixels', size=11,
                 color='darkviolet', ha='left')
@@ -1297,11 +1326,56 @@ yticks=plt.gca().get_yticklabels()
 
 
 for text in yticks:
-    if text.get_text() in no_spend_but_above_mean_purchases_from_campaign_labels:
+    if text.get_text() == 'Fox News':
         text.set_weight('bold')
         text.set_color('green')
+    elif text.get_text() == 'Aapka Colors' or text.get_text() == 'Hgtv':
+        text.set_weight('bold')
+        text.set_color('darkturquoise')
 
 ax.invert_yaxis();
+
+# %% [markdown]
+# ## Slope plots
+
+# %%
+report_for_client_by_month.index.get_level_values(level=0).values
+
+# %%
+channel_names = report_for_client_by_month.index.get_level_values(level=0).values
+
+# %%
+fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+for name in channel_names:
+    temp = report_for_client_by_month.loc[(name,), :]
+    dates = report_for_client_by_month.index.get_level_values(level=1).unique().values
+    y_vals = temp['Purchases']
+    ax.plot(dates, y_vals)
+
+# %%
+fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+for name in channel_names:
+    temp = report_for_client_by_month.loc[(name,), :]
+    dates = report_for_client_by_month.index.get_level_values(level=1).unique().values
+    y_vals = temp['Spend']
+    ax.plot(dates, y_vals)
+
+# %%
+fig, ax = plt.subplots(1,1, figsize=(10,10))
+
+for name in channel_names:
+    temp = report_for_client_by_month.loc[(name,), :]
+    dates = report_for_client_by_month.index.get_level_values(level=1).unique().values
+    y_vals = temp['Lift']
+    ax.plot(dates, y_vals)
+
+# %%
+report_for_client_by_month.index.get_level_values(level=1).unique().values
+
+# %%
+report_for_client_by_month.loc[('Bloomberg',), :]
 
 # %% [markdown]
 # # Scratch Work
