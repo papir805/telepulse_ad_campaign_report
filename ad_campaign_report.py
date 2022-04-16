@@ -14,14 +14,16 @@
 # ---
 
 # %% [markdown]
-# # Start
+# # Advertising Campaign Report - Sept/Oct 2017
 
 # %%
 import pandas as pd
 import numpy as np
 from datetime import datetime
-import seaborn as sns
-import matplotlib.pyplot as plt
+import pdfkit
+
+# %% [markdown]
+# # Cleaning
 
 # %%
 purchase_data = pd.read_excel("./dataset.xlsx", sheet_name='Purchases')
@@ -34,10 +36,10 @@ lookup_data = pd.read_excel("./dataset.xlsx", sheet_name='Lookup', skiprows=1)
 # # Preprocessing
 
 # %%
-# Lookup data is meant to facilitate a join between the purchases data and the spend/lift data, but lookup data has a row will all null values, which doesn't help the join in any way.  I'll drop that row.
+# Lookup data is meant to facilitate a join between the purchases data and the spend/lift data, but lookup data has a row with all null values, which doesn't help the join in any way.  I'll drop that row.
 lookup_data = lookup_data.dropna(how='all')
 
-# The Exit Survey column and Network Name.1 column are identical, so we can drop the duplicated column.
+# The Network Name column and Network Name.1 column contain identical information, so we can drop the duplicated column.
 lookup_data.drop(labels='Network Name.1', axis=1, inplace=True)
 
 # %%
@@ -45,8 +47,8 @@ lookup_data.drop(labels='Network Name.1', axis=1, inplace=True)
 
 # The purchase data table is pretty messy, but if we assume the second column always contains the names of the networks, we can use .iloc to grab them and ensure they're lowercase 
 
-lookup_data['Exit Survey'] = lookup_data['Exit Survey'].str.lower()
-lookup_data['Airings'] = lookup_data['Airings'].str.upper()
+lookup_data['Network Name'] = lookup_data['Network Name'].str.lower()
+lookup_data['Ticker'] = lookup_data['Ticker'].str.upper()
 airings_data['Network'] = airings_data['Network'].str.upper()
 purchase_data.iloc[:, 1] = purchase_data.iloc[:, 1].str.lower()
 
@@ -133,6 +135,7 @@ purchase_data_transpose.index = pd.to_datetime(purchase_data_transpose.index)
 # ## Purchases by Network
 
 # %%
+# Aggregate across rows to find the total number of purchases by network
 purchases_by_network = purchase_data_transpose.sum(axis=0)
 purchases_by_network = purchases_by_network.to_frame()
 purchases_by_network = purchases_by_network.rename(columns={0:'Purchases'})
@@ -141,6 +144,7 @@ purchases_by_network = purchases_by_network.rename(columns={0:'Purchases'})
 # ## Spend and Lift by Network
 
 # %%
+# Aggregate to find the total amount spent on ads for each network and the total lift generated from those ads for each network 
 spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].agg('sum')
 
 # %% [markdown]
@@ -150,17 +154,17 @@ spend_and_lift_by_network = airings_data.groupby('Network')[['Spend', 'Lift']].a
 # ### Joining Purchases by Network to Lookup Data
 
 # %%
-purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Exit Survey', right_on='Source', how='left')
-purchases_by_network_w_lookup.set_index('Exit Survey', inplace=True)
+purchases_by_network_w_lookup = lookup_data.merge(right=purchases_by_network, left_on='Network Name', right_on='Source', how='left')
+purchases_by_network_w_lookup.set_index('Network Name', inplace=True)
 
 # %% [markdown] tags=[]
 # ### Joining Purchases/Lookup by Network to Spend and Lift
 
 # %%
-purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spend_and_lift_by_network, left_on='Airings', right_index=True, how='left')
+purchases_spend_lift_by_network = purchases_by_network_w_lookup.merge(right=spend_and_lift_by_network, left_on='Ticker', right_index=True, how='left')
 
 # Since this column was only needed for the join, I'm going to drop it post join
-purchases_spend_lift_by_network.drop('Airings', axis=1, inplace=True)
+purchases_spend_lift_by_network.drop('Ticker', axis=1, inplace=True)
 
 # %%
 purchases_spend_lift_by_network.index = purchases_spend_lift_by_network.index.str.replace('_', ' ').str.title()
@@ -190,7 +194,7 @@ purchases_spend_lift_by_network['Percent Pur > Percent Spend'] = purchases_spend
 # %%
 current_year_and_months = str(current_year) + '_' + '_'.join(str(month) for month in months)
 
-purchases_spend_lift_by_network.to_csv(F"./cleaned_output/purchases_spend_lift_by_network_{current_year_and_months}.csv")
+purchases_spend_lift_by_network.to_csv(F"./output/cleaned_csvs/purchases_spend_lift_by_network_{current_year_and_months}.csv")
 
 # %% [markdown]
 # ## Done
@@ -241,15 +245,21 @@ purchases_by_network_and_month.rename(columns={0:'Purchases'}, inplace=True)
 # ### Joining lookup_data_with_months to spend_lift_by_network_and_month
 
 # %%
-lookup_spend_lift_by_network_and_month = lookup_data_with_months.merge(spend_lift_by_network_and_month, left_on=['Airings', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
+lookup_data_with_months.head()
 
-lookup_spend_lift_by_network_and_month.drop(columns=['Airings', 'Network', 'Date/Time ET'], inplace=True)
+# %%
+spend_lift_by_network_and_month.head()
+
+# %%
+lookup_spend_lift_by_network_and_month = lookup_data_with_months.merge(spend_lift_by_network_and_month, left_on=['Ticker', 'date'], right_on=['Network', 'Date/Time ET'], how='left')
+
+lookup_spend_lift_by_network_and_month.drop(columns=['Ticker', 'Network', 'Date/Time ET'], inplace=True)
 
 # %% [markdown]
 # ### Joining Spend and Lift to Purchases
 
 # %%
-purchases_spend_lift_by_network_and_month = lookup_spend_lift_by_network_and_month.merge(purchases_by_network_and_month, left_on=['Exit Survey', 'date'], right_on=['Source', 'date'], how='left')
+purchases_spend_lift_by_network_and_month = lookup_spend_lift_by_network_and_month.merge(purchases_by_network_and_month, left_on=['Network Name', 'date'], right_on=['Source', 'date'], how='left')
 
 purchases_spend_lift_by_network_and_month.drop(columns='Source', inplace=True)
 
@@ -257,13 +267,16 @@ purchases_spend_lift_by_network_and_month.drop(columns='Source', inplace=True)
 # ## Cleanup
 
 # %%
-purchases_spend_lift_by_network_and_month['Exit Survey'] = purchases_spend_lift_by_network_and_month['Exit Survey'].str.replace('_', ' ').str.title()
+purchases_spend_lift_by_network_and_month['Network Name'] = purchases_spend_lift_by_network_and_month['Network Name'].str.replace('_', ' ').str.title()
 
 # %%
-purchases_spend_lift_by_network_and_month.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
+purchases_spend_lift_by_network_and_month.head()
 
 # %%
-purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.set_index(['Exit Survey Source', 'date'])
+# purchases_spend_lift_by_network_and_month.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
+
+# %%
+purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.set_index(['Network Name', 'date'])
 
 # %%
 purchases_spend_lift_by_network_and_month.fillna(0, inplace=True)
@@ -292,13 +305,13 @@ purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_
 
 purchases_spend_lift_by_network_and_month[['Purchases', 'Lift']] = purchases_spend_lift_by_network_and_month[['Purchases', 'Lift']].astype(int)
 
-purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.sort_values('Exit Survey Source')
+purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.sort_values('Network Name')
 
 # %% [markdown]
 # ## Output results to CSV file
 
 # %%
-purchases_spend_lift_by_network_and_month.to_csv(F"./cleaned_output/purchases_spend_lift_by_network_and_month_{current_year_and_months}.csv")
+purchases_spend_lift_by_network_and_month.to_csv(F"./output/cleaned_csvs/purchases_spend_lift_by_network_and_month_{current_year_and_months}.csv")
 
 # %% [markdown]
 # ## Done
@@ -320,15 +333,17 @@ report_for_client[['Purchases', 'Lift']] = report_for_client[['Purchases', 'Lift
 report_for_client = report_for_client.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
 
 
-report_for_client.rename_axis('Exit Survey Source', axis=0, inplace=True)
+report_for_client.rename_axis('Network', axis=0, inplace=True)
 
-report_for_client = report_for_client.sort_values('Exit Survey Source')
+report_for_client = report_for_client.sort_values('Network')
 
 # %% [markdown]
 # ## Monthly report by network
 
 # %%
 report_for_client_by_month = purchases_spend_lift_by_network_and_month.drop(['Percent of Purchases', 'Percent of Spend', 'Percent Pur > Percent Spend'], axis=1)
+
+report_for_client_by_month.index.set_names('Network', level=0, inplace=True)
 
 # %%
 report_for_client_by_month = report_for_client_by_month.round({"Purchases":0, "Spend":2, "Lift":0, "Conversion Rate (Purchases/Lift)%":1, "Cost Per Acquisition (Spend/Purchases)":2, "Cost Per Visitor (Spend/Lift)":2})
@@ -343,59 +358,91 @@ report_for_client_by_month = report_for_client_by_month.loc[report_for_client.in
 report_for_client_by_month.fillna(0, inplace=True)
 
 # %% [markdown]
-# # Viewing Report by Network
-
-# %%
-report_for_client
-
-# %% [markdown]
-# # Viewing Report by Network and Month
-
-# %%
-report_for_client_by_month
-
-# %% [markdown]
 # ## Report of channels where Spend = 0
 
 # %%
 channels_no_spend = purchases_spend_lift_by_network.query('Spend == 0')['Purchases'].to_frame()
 
+channels_no_spend.rename_axis('Network', axis=0, inplace=True)
+
 channels_no_spend.sort_values(by='Purchases', ascending=False, inplace=True)
 
+# %% [markdown]
+# ## Output reports to CSV file
+
 # %%
-purchases_spend_lift_by_network.query('Spend == 0')['Purchases'].to_frame().sort_index()
+report_for_client.to_csv(F"./output/cleaned_csvs/report_for_client_{current_year_and_months}.csv")
+
+# %%
+report_for_client_by_month.to_csv(F"./output/cleaned_csvs/report_for_client_by_month_{current_year_and_months}.csv")
+
+# %%
+channels_no_spend.to_csv(F"./output/cleaned_csvs/channels_no_spend_{current_year_and_months}.csv")
 
 # %% [markdown]
-# ## Exporting Results to PDF Files
+# ## Exporting Reports to PDF Files
 
 # %%
-import pdfkit
-
-f = open('./reports_output/html/report_for_client.html','w')
+f = open('./output/reports/html/report_for_client.html','w')
 a = report_for_client.to_html(col_space='100px')
 f.write(a)
 f.close()
 
-pdfkit.from_file('./reports_output/html/report_for_client.html', './reports_output/pdfs/report_for_client.pdf')
+pdfkit.from_file('./output/reports/html/report_for_client.html', './output/reports/pdfs/report_for_client.pdf')
 
 # %%
-f = open('./reports_output/html/report_for_client_by_month.html','w')
+f = open('./output/reports/html/report_for_client_by_month.html','w')
 a = report_for_client_by_month.to_html(col_space='100px')
 f.write(a)
 f.close()
 
-pdfkit.from_file('./reports_output/html/report_for_client_by_month.html', './reports_output/pdfs/report_for_client_by_month.pdf')
+pdfkit.from_file('./output/reports/html/report_for_client_by_month.html', './output/reports/pdfs/report_for_client_by_month.pdf')
 
 # %%
-f = open('./reports_output/html/report_channels_no_spend.html','w')
+f = open('./output/reports/html/report_channels_no_spend.html','w')
 a = channels_no_spend.to_html(col_space='100px')
 f.write(a)
 f.close()
 
-pdfkit.from_file('./reports_output/html/report_channels_no_spend.html', './reports_output/pdfs/report_channels_no_spend.pdf')
+pdfkit.from_file('./output/reports/html/report_channels_no_spend.html', './output/reports/pdfs/report_channels_no_spend.pdf')
+
+# %% [markdown]
+# # Viewing Reports
+
+# %% [markdown]
+# ## Report by Network
+
+# %%
+report_for_client
+
+# %% [markdown]
+# ## Report by Network and Month
+
+# %%
+report_for_client_by_month
+
+# %% [markdown]
+# ## Report of purchases for channels with no spend
+
+# %%
+channels_no_spend
+
+# %% [markdown]
+# # Finish
 
 # %% [markdown]
 # # Presentation 
+
+# %%
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+# %%
+# load CSV files
+
+# report_for_client = 
+# report_for_client_by_month = 
+# channels_no_spend = 
 
 # %% [markdown]
 # ## How much does it cost to acquire a customer through TV?
@@ -1117,7 +1164,7 @@ scale=10
 # #### Spend vs. Purchases
 
 # %%
-willow_tv = report_for_client.query("`Exit Survey Source` == 'Willow Tv'")
+willow_tv = report_for_client.query("`Network` == 'Willow Tv'")
 willow_tv_purchases = willow_tv['Purchases']
 willow_tv_spend = willow_tv['Spend']
 willow_tv_lift = willow_tv['Lift']
@@ -1264,11 +1311,11 @@ report_for_client["Cost Per Visitor (Spend/Lift)"].mean()
 # ### Channels with no spend, but had purchases.  Excluding 'Other' and '(Blank)'
 
 # %%
-no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Exit Survey` != 'Other' & `Exit Survey` != '(Blank)'")
+no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Network Name` != 'Other' & `Network Name` != '(Blank)'")
 no_spend_but_purchases
 
 # %%
-no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Exit Survey` != 'Other' & `Exit Survey` != '(Blank)'")
+no_spend_but_purchases = purchases_spend_lift_by_network.query("Spend == 0 & Purchases > 0 & `Network Name` != 'Other' & `Network Name` != '(Blank)'")
 
 no_spend_but_purchases = no_spend_but_purchases.sort_values('Purchases', ascending=False)[['Purchases']]
 
@@ -1389,7 +1436,7 @@ purchases_spend_lift_by_network.query('Spend == 0')
 # %%
 
 # %%
-num_purchases_no_spend = report_for_client[report_for_client['Spend']==0].groupby("Exit Survey Source")['Purchases'].agg('sum')
+num_purchases_no_spend = report_for_client[report_for_client['Spend']==0].groupby("Network")['Purchases'].agg('sum')
 
 tot_purchases_no_spend = sum(num_purchases_no_spend)
 
