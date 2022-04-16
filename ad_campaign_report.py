@@ -108,7 +108,6 @@ purchase_data_transpose = purchase_data.iloc[3:,:].transpose()
 
 # %%
 # Set the column of dates as the index and rename the axis appropriately
-#purchase_data_transpose.index = purchase_data_transpose.iloc[:, 0]
 purchase_data_transpose.set_index(3, inplace=True)
 purchase_data_transpose.rename_axis('date', inplace=True)
 
@@ -271,9 +270,6 @@ purchases_spend_lift_by_network_and_month['Network Name'] = purchases_spend_lift
 
 # %%
 purchases_spend_lift_by_network_and_month.head()
-
-# %%
-# purchases_spend_lift_by_network_and_month.rename(columns={"Exit Survey": "Exit Survey Source"}, inplace=True)
 
 # %%
 purchases_spend_lift_by_network_and_month = purchases_spend_lift_by_network_and_month.set_index(['Network Name', 'date'])
