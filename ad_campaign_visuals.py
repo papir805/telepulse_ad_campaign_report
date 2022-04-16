@@ -632,9 +632,11 @@ def make_scatter_with_size_adjustment(df,
 # #### Spend vs. Purchases
 
 # %%
+# Scaling factor to use for scatter plots that adjust point size based on number of purchases
 scale=10
 
 # %%
+# Willow TV is an outlier in several scatter plots.  I'm grabbing information on that network now to use in labelling the scatter plots later
 willow_tv = report_for_client.query("`Network` == 'Willow Tv'")
 willow_tv_purchases = willow_tv['Purchases']
 willow_tv_spend = willow_tv['Spend']
@@ -740,6 +742,8 @@ plt.show()
 
 # %% [markdown]
 # #### Spend vs. Conversion Rate
+#
+# Note for the future, I need to practice using adjust_text library more to understand how I can play with the parameters that adjust labeling of points.  Another idea, only label certain points, as not all of the points that are currently labelled are needed for the powerpoint presentation.
 
 # %%
 make_scatter_with_size_adjustment(report_for_client,
@@ -806,9 +810,6 @@ report_for_client["Cost Per Visitor (Spend/Lift)"].mean()
 no_spend_but_purchases = channels_no_spend.query("Purchases > 0 & `Network` != 'Other' & `Network` != '(Blank)'").copy(deep=True)
 
 # %%
-no_spend_but_purchases
-
-# %%
 no_spend_but_purchases['percent_of_all_purchases'] = no_spend_but_purchases['Purchases'] / total_purchases_from_campaign * 100
 
 # %%
@@ -821,9 +822,6 @@ mean_num_purchases_from_campaign = round(total_purchases_from_campaign / num_net
 no_spend_but_above_mean_purchases_from_campaign_labels = no_spend_but_purchases[no_spend_but_purchases['Purchases'] > mean_num_purchases_from_campaign].index.values
 
 # %%
-# no_spend_but_purchases['above_mean_purchases_from_campaign'] = no_spend_but_purchases['Purchases'] > mean_num_purchases_from_campaign
-
-# %%
 no_spend_yticks = []
 for label in no_spend_but_purchases.index.values:
     if label in no_spend_but_above_mean_purchases_from_campaign_labels:
@@ -832,8 +830,6 @@ for label in no_spend_but_purchases.index.values:
         no_spend_yticks.append('')
 
 # %%
-import matplotlib.patheffects as pe
-
 fig, ax = plt.subplots(1,1,figsize=(8,6))
 no_spend_but_purchases['Purchases'].plot(kind='barh', ax=ax, edgecolor='black')
 ax.set_xlabel('Number of Purchases on Exit Survey')
@@ -845,6 +841,7 @@ text1 = ax.annotate(F'Mean purchases\nfrom channels\nthat had spending',
                 xy=(mean_num_purchases_with_spend, 0), xycoords='data',
                 xytext=(5, -175), textcoords='offset pixels', size=11,
                 color='red', ha='left')
+# import matplotlib.patheffects as pe 
 # text1.set_path_effects(path_effects=[pe.withStroke(linewidth=2.5, foreground='black'), pe.Normal()])
 
 ax.axvline(mean_num_purchases_from_campaign, color='darkviolet', linestyle='--')

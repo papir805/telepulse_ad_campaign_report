@@ -417,9 +417,6 @@ report_for_client
 # %%
 report_for_client_by_month
 
-# %%
-report_for_client_by_month.index.dtypes
-
 # %% [markdown]
 # ## Report of purchases for channels with no spend
 
