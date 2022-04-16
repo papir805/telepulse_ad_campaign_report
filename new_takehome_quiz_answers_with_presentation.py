@@ -24,11 +24,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 # %%
-purchase_data = pd.read_excel("./dataset.xlsx", sheet_name='Purchase Exit Survey Data')
+purchase_data = pd.read_excel("./dataset.xlsx", sheet_name='Purchases')
 airings_data = pd.read_excel("./dataset.xlsx", sheet_name='Airings')
 
 # The first row of Lookup table says "Lookup table for survey response field to airings network ticker symbol."  Assuming the first row always says that, we can drop it.
-lookup_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Lookup', skiprows=1)
+lookup_data = pd.read_excel("./dataset.xlsx", sheet_name='Lookup', skiprows=1)
 
 # %% [markdown]
 # # Preprocessing
@@ -37,8 +37,8 @@ lookup_data = pd.read_excel("./Analyst_dataset.xlsx", sheet_name='Lookup', skipr
 # Lookup data is meant to facilitate a join between the purchases data and the spend/lift data, but lookup data has a row will all null values, which doesn't help the join in any way.  I'll drop that row.
 lookup_data = lookup_data.dropna(how='all')
 
-# The Exit Survey column and Exit Survey.1 column are identical, so we can drop the duplicated column.
-lookup_data.drop(labels='Exit Survey.1', axis=1, inplace=True)
+# The Exit Survey column and Network Name.1 column are identical, so we can drop the duplicated column.
+lookup_data.drop(labels='Network Name.1', axis=1, inplace=True)
 
 # %%
 # In order to make sure the joins happen correctly, we need to ensure that the strings we're joining on actually match.
