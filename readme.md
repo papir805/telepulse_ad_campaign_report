@@ -5,7 +5,7 @@ Every month, a data pipeline generates an Excel report containing information re
 
 The script can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
 <br>
-</br>
+<br/>
 
 
 Using data from September and October 2017, I've generated the [three reports](https://github.com/papir805/ad_campaign_report/tree/main/output/reports/pdfs) and created visuals in another jupyter notebook to help identify the most cost efficient networks. 
