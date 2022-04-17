@@ -6,6 +6,8 @@ Important Python libraries used: `Pandas`, `NumPy`, `Matplotlib`, and `Seaborn`.
 
 Every month, a data pipeline generates an Excel report containing information relating to ads shown on over 30 TV networks for a particular company/brand.  The data consists of the amount spent on, lift generated from, and customer acquisition attributed to, a particular ad over the past two months of airings.  This script cleans the data, performs joins, and calculates important metrics, then generates and exports three reports as PDF files, which can be used to produce recommendations for TV networks where ad spending should be increased/decreased.
 
+To download the original dataset as an Excel .xlsw file, [click here](https://github.com/papir805/ad_campaign_report/raw/main/dataset.xlsx)
+
 The script can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
 <br>
 <br/>
@@ -23,7 +25,7 @@ The PowerPoint presentation can be found [here](https://docs.google.com/presenta
 <br>
 <br/>
 
-To download the original dataset as an Excel .xlsw file, [click here](https://github.com/papir805/ad_campaign_report/raw/main/dataset.xlsx)
+
 
 # To-Do List - ad_campaign_report_script:
 - None
