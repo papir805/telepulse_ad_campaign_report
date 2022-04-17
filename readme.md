@@ -15,9 +15,9 @@ The jupyter notebook that generated the visuals can be found [here](https://gith
 <br>
 <br/>
 
-Lastly, I've taken the visuals and created a PowerPoint presentation with my recommendations for which TV networks more/less should be spent on ads.
+Lastly, I've taken the visuals and created a PowerPoint presentation with my recommendations for the TV networks where advertising spending should be increased or decreased.
 
-The PowerPoint presentation can be found [here need-to-fill-in]()
+The PowerPoint presentation can be found [here](https://docs.google.com/presentation/d/1T-fGZ3Cf7lJvf4lJWJhyOq45gDOGqSKuG6wpV-fVQLo/edit?usp=sharing)
 <br>
 <br/>
 
