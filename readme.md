@@ -1,8 +1,10 @@
 # Television Advertising Campaign Report
-## Goal: To produce a script, which automatically generates monthly reports, that can be used to determine the most cost efficient TV networks to advertise on.
+## Goal: To produce a script, which automatically generates monthly reports that can be used to determine the most cost efficient TV networks to advertise on.
 Important Python libraries used: `Pandas`, `NumPy`, `Matplotlib`, and `Seaborn`.
+<br>
+<br/>
 
-Every month, a data pipeline generates an Excel report containing information relating to ads shown on over 30 TV networks, over the past two months, for a particular company/brand.  The data consists of amount spent on, lift generated from, and customer acquisition attributed to a particular ad over the past two months of airings.  This script cleans the data, performs joins, and calculates important metrics, then generates three and exports reports as PDF files, which can be used to produce recommendations for TV networks where ad spending should be increased/decreased.
+Every month, a data pipeline generates an Excel report containing information relating to ads shown on over 30 TV networks for a particular company/brand.  The data consists of the amount spent on, lift generated from, and customer acquisition attributed to, a particular ad over the past two months of airings.  This script cleans the data, performs joins, and calculates important metrics, then generates and exports three reports as PDF files, which can be used to produce recommendations for TV networks where ad spending should be increased/decreased.
 
 The script can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
 <br>
