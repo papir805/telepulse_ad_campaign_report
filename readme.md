@@ -4,7 +4,6 @@
 Every month, a data pipeline generates an Excel report containing information relating to ads shown on over 30 TV networks, over the past two months, for a particular company/brand.  The data consists of amount spent on, lift generated from, and customer acquisition attributed to a particular ad over the past two months of airings.  This script cleans the data, performs joins, and calculates important metrics, then generates three and exports reports as PDF files, which can be used to produce recommendations for TV networks where ad spending should be increased/decreased.
 
 The script can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
-<br>
 <br/>
 
 
