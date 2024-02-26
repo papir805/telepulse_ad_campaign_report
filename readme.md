@@ -1,35 +1,40 @@
-# Television Advertising Campaign Report
-## Goal: To produce a script, which automatically generates monthly reports that can be used to determine the most cost efficient TV networks to advertise on.
+# TelePulse Ad Campaign Report
+## Goal: Automating the generation of monthly reports to determine the most cost-efficient TV networks for ad spending.
 Important Python libraries used: `Pandas`, `NumPy`, `Matplotlib`, and `Seaborn`.
 <br>
 <br/>
 
-![TV](https://github.com/papir805/ad_campaign_report/blob/main/thumbnail.jpeg)
+![TV](./thumbnail.jpeg)
 
-Every month, a data pipeline generates an Excel report containing information relating to ads shown on over 30 TV networks for a particular company/brand.  The data consists of the amount spent on, lift generated from, and customer acquisition attributed to, a particular ad over the past two months of airings.  This script cleans the data, performs joins, and calculates important metrics, then generates and exports three reports as PDF files, which can be used to produce recommendations for TV networks where ad spending should be increased/decreased.
+Every month, a data pipeline generates an Excel file containing information on ads shown on over 30 TV networks. Each row in the table represents data on a particular ad airing in a specific time slot, consisting of:
+* Amount spent on the ad
+* Lift generated from the ad
+* Customer acquisitions from the ad
 
-To download the original dataset as an Excel .xlsw file, [click here](https://github.com/papir805/ad_campaign_report/raw/main/dataset.xlsx)
+My Python script cleans the data, performs joins, and calculates important metrics, then generates and exports three summary reports as PDF files to produce recommendations for the TV networks where ad spending should be increased or decreased.
 
-The script can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
+To download the original dataset as an Excel .xlsw file, [click here](./dataset.xlsx)
+
+The script that cleans the data and produces the reports can be found [here](https://nbviewer.org/github/papir805/telepulse_ad_campaign_report/blob/main/ad_campaign_report_script.ipynb)
 <br>
 <br/>
 
 
-Using data from September and October 2017, I've generated the [three reports](https://github.com/papir805/ad_campaign_report/tree/main/output/reports/pdfs) and created visuals in another jupyter notebook to help identify the most cost efficient networks. 
+Using data from September and October 2017, I've generated the [three reports](./output/reports/pdfs) and created visuals in another jupyter notebook to help identify the most cost efficient networks. 
 
-The jupyter notebook that generated the visuals can be found [here](https://github.com/papir805/ad_campaign_report/blob/main/ad_campaign_visuals.ipynb)
+The jupyter notebook that generated the visuals can be found [here](https://github.com/papir805/telepulse_ad_campaign_report/blob/main/ad_campaign_visuals.ipynb)
 <br>
 <br/>
 
 Lastly, I've taken the visuals and created a PowerPoint presentation with my recommendations for the TV networks where advertising spending should be increased or decreased.
 
-The PowerPoint presentation can be found [here](https://docs.google.com/presentation/d/1T-fGZ3Cf7lJvf4lJWJhyOq45gDOGqSKuG6wpV-fVQLo/edit?usp=sharing)
+The Google Slides presentation can be found [here](https://docs.google.com/presentation/d/1T-fGZ3Cf7lJvf4lJWJhyOq45gDOGqSKuG6wpV-fVQLo/edit?usp=sharing)
 <br>
 <br/>
 
 
 
-# To-Do List - ad_campaign_report_script:
+<!-- # To-Do List - ad_campaign_report_script:
 - None
 
 # To-Do List - ad_campaign_visuals:
@@ -52,4 +57,4 @@ The PowerPoint presentation can be found [here](https://docs.google.com/presenta
     - [ ] Incorporate to show monthly changes?
 - PowerPoint presentation
     - [ ] Add agenda at start
-    - [ ] Make title slides more informative by leveraging pre-attentive attributes.  The title sets the tone for how one reads the rest of the slide.
+    - [ ] Make title slides more informative by leveraging pre-attentive attributes.  The title sets the tone for how one reads the rest of the slide. -->
